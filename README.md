@@ -1,8 +1,15 @@
-# portal_cobranza
+# React + Vite
 
-Portal de Cobranza Para Clientes externos
+# Crear el proyecto
 
-Stack para Portal:
+npm create vite@latest mi-proyecto-antd -- --template react
 
--React + Vite
--Ant design
+# Entrar y instalar dependencias
+
+cd mi-proyecto-antd
+npm install
+npm install antd react-router-dom
+
+# Arrancar el proyecto
+
+npm run dev
