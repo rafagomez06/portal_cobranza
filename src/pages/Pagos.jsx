@@ -25,6 +25,8 @@ import {
   UploadOutlined,
   SendOutlined,
   EllipsisOutlined,
+  SaveOutlined,
+  SearchOutlined,
   ClearOutlined,
 } from "@ant-design/icons";
 import {
@@ -42,15 +44,18 @@ const Pagos = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [totalImporteRow, setTotalImporteRow] = useState(0);
 
+  const [searchText, setSearchText] = useState("");
   const { Title, Text } = Typography;
 
   const montoCapturado = Form.useWatch("monto", form);
+
   //Reinicia la pantalla
   const handleReset = () => {
     form.resetFields();
     setValueSelect(1);
     setAbonos({});
     setSelectedRowKeys([]);
+    setTotalImporteRow(0);
     messageApi.info("Formulario limpiado");
   };
 
@@ -60,7 +65,7 @@ const Pagos = () => {
     console.log("Filas seleccionadas:", rows);
 
     const totalRow = rows.reduce((sum, row) => {
-      const importe = row.importe || 0;
+      const importe = row.importe;
       return sum + importe;
     }, 0);
     setTotalImporteRow(totalRow);
@@ -74,8 +79,8 @@ const Pagos = () => {
       (sum, value) => sum + (Number(value) || 0),
       0,
     );
-    return montoInicial - totalAbonado;
-  }, [montoCapturado, abonos]);
+    return montoInicial - totalAbonado - totalImporteRow;
+  }, [montoCapturado, abonos, totalImporteRow]);
 
   //Detecta seleccion de rows en tabla
   const rowSelection = {
@@ -178,6 +183,7 @@ const Pagos = () => {
       ncFolio: "NC-001",
       ncImporte: 200,
       abonado: 0,
+      aclaracion: 0,
     },
     {
       key: "2",
@@ -188,6 +194,7 @@ const Pagos = () => {
       ncFolio: "NC-0012",
       ncImporte: 200,
       abonado: 0,
+      aclaracion: 0,
     },
     {
       key: "3",
@@ -198,6 +205,7 @@ const Pagos = () => {
       ncFolio: "NC-002",
       ncImporte: 200,
       abonado: 0,
+      aclaracion: 0,
     },
     {
       key: "4",
@@ -208,6 +216,7 @@ const Pagos = () => {
       ncFolio: "NC-021",
       ncImporte: 120,
       abonado: 0,
+      aclaracion: 0,
     },
     {
       key: "5",
@@ -218,6 +227,7 @@ const Pagos = () => {
       ncFolio: "NC-421",
       ncImporte: 130,
       abonado: 0,
+      aclaracion: 0,
     },
     {
       key: "6",
@@ -228,6 +238,62 @@ const Pagos = () => {
       ncFolio: "NC-111",
       ncImporte: 230,
       abonado: 0,
+      aclaracion: 0,
+    },
+    {
+      key: "7",
+      factura: "A320452",
+      fecha: "10-01-2026",
+      moneda: "Pesos",
+      importe: 120,
+      ncFolio: "NC-111",
+      ncImporte: 230,
+      abonado: 0,
+      aclaracion: 0,
+    },
+    {
+      key: "8",
+      factura: "A320452",
+      fecha: "10-01-2026",
+      moneda: "Pesos",
+      importe: 120,
+      ncFolio: "NC-111",
+      ncImporte: 230,
+      abonado: 0,
+      aclaracion: 0,
+    },
+    {
+      key: "9",
+      factura: "A320452",
+      fecha: "10-01-2026",
+      moneda: "Pesos",
+      importe: 120,
+      ncFolio: "NC-111",
+      ncImporte: 230,
+      abonado: 0,
+      aclaracion: 0,
+    },
+    {
+      key: "10",
+      factura: "A320452",
+      fecha: "10-01-2026",
+      moneda: "Pesos",
+      importe: 120,
+      ncFolio: "NC-111",
+      ncImporte: 230,
+      abonado: 0,
+      aclaracion: 0,
+    },
+    {
+      key: "11",
+      factura: "A320452",
+      fecha: "10-01-2026",
+      moneda: "Pesos",
+      importe: 120,
+      ncFolio: "NC-111",
+      ncImporte: 230,
+      abonado: 0,
+      aclaracion: 0,
     },
   ];
 
@@ -282,19 +348,26 @@ const Pagos = () => {
       title: "Abonado",
       dataIndex: "abonado",
       key: "abonado",
+      align: "center",
+      width: 150,
       render: (_, record) => (
         <InputNumber
           value={abonos[record.key] || null}
-          readOnly
           onChange={(value) => handleAbonoChange(record.key, value)}
           placeholder="0.00"
           min={0}
           //max={99}
           precision={2}
-          style={{ width: "30%" }}
+          style={{ width: "100%" }}
           prefix="$"
         />
       ),
+    },
+    {
+      title: "Aclaración",
+      dataIndex: "aclaracion",
+      key: "aclaracion",
+      align: "center",
     },
   ];
 
@@ -349,7 +422,9 @@ const Pagos = () => {
                 name="archivo"
                 valuePropName="fileList"
                 getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-                rules={[{ required: true, message: "Sube un archivo" }]}
+                rules={[
+                  { required: true, message: "Sube Comprobante de Pago" },
+                ]}
               >
                 <Upload
                   {...uploadProps}
@@ -394,7 +469,21 @@ const Pagos = () => {
           <Row justify="end">
             <Col>
               <Space size={12}>
-                <Button type="primary" htmlType="submit" loading={loading}>
+                <Button
+                  color="green"
+                  variant="solid"
+                  loading={loading}
+                  icon={<SearchOutlined />}
+                >
+                  Buscar Facturas
+                </Button>
+                <Button
+                  color="blue"
+                  variant="solid"
+                  htmlType="submit"
+                  loading={loading}
+                  icon={<SaveOutlined />}
+                >
                   Guardar
                 </Button>
                 <Button
@@ -447,7 +536,8 @@ const Pagos = () => {
             columns={columns}
             dataSource={dataSource}
             rowKey="key"
-            size="middle"
+            size="large"
+            pagination={{ pageSize: 10 }}
           />
         ) : (
           <Empty description="No hay facturas para mostrar" />

@@ -10,7 +10,7 @@ import {
   DollarCircleFilled,
   DollarCircleOutlined,
 } from "@ant-design/icons";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   layoutStyle,
   headerStyle,
@@ -20,9 +20,18 @@ import {
 const { Header, Content, Footer, Sider } = Layout;
 const { Text } = Typography;
 
+//Rutas de opciones Sidebar
+const RUTA_CLAVE = {
+  "/": "1",
+  "/pagos": "2",
+  "/configuracion": "3",
+};
+
 const AppLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const selectedKey = RUTA_CLAVE[location.pathname] || "1";
 
   const handleLogout = () => {
     // Aquí puedes limpiar tokens, sesión, etc.
@@ -97,7 +106,7 @@ const AppLayout = () => {
           <Menu
             theme="dark"
             mode="inline"
-            defaultSelectedKeys={["1"]}
+            selectedKeys={[selectedKey]}
             style={{ flex: 1, borderRight: 0, fontSize: 18 }}
             items={[
               {
@@ -110,7 +119,6 @@ const AppLayout = () => {
                 icon: <DollarCircleOutlined />,
                 label: <Link to="/pagos">Pagos</Link>,
               },
-
               {
                 key: "3",
                 icon: <SettingOutlined />,
