@@ -6,6 +6,7 @@ import {
   HomeOutlined,
   UserOutlined,
   LogoutOutlined,
+  SettingOutlined,
   DollarCircleFilled,
   DollarCircleOutlined,
 } from "@ant-design/icons";
@@ -109,10 +110,11 @@ const AppLayout = () => {
                 icon: <DollarCircleOutlined />,
                 label: <Link to="/pagos">Pagos</Link>,
               },
+
               {
                 key: "3",
-                icon: <UserOutlined />,
-                label: <Link to="/perfil">Perfil</Link>,
+                icon: <SettingOutlined />,
+                label: <Link to="/configuracion">Configuración</Link>,
               },
             ]}
           />
@@ -125,7 +127,6 @@ const AppLayout = () => {
             <Button
               type="primary"
               danger
-              filled
               icon={<LogoutOutlined />}
               onClick={handleLogout}
               block

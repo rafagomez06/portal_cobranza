@@ -1,33 +1,457 @@
-import { Card } from "antd";
-import React from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Breadcrumb } from "antd";
+import React, { useState, useMemo } from "react";
 import {
-  loginContainerStyle,
+  Card,
+  Radio,
+  Breadcrumb,
+  Form,
+  Input,
+  Button,
+  Empty,
+  Upload,
+  Divider,
+  Tag,
+  Table,
+  Flex,
+  Space,
+  Row,
+  Dropdown,
+  Col,
+  Typography,
+  message,
+  InputNumber,
+  Select,
+} from "antd";
+import {
+  UploadOutlined,
+  SendOutlined,
+  EllipsisOutlined,
+  ClearOutlined,
+} from "@ant-design/icons";
+import {
   CardStyle,
-  logoStyle,
-  logoStyleImg,
-  titleStyle,
-  subtitleStyle,
-  forgotPasswordStyle,
+  radioVerdeSelected,
+  radioAzulSelected,
 } from "../configs/Estilos";
 
 const Pagos = () => {
+  const [form] = Form.useForm();
+  const [valueSelect, setValueSelect] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();
+  const [abonos, setAbonos] = useState({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [totalImporteRow, setTotalImporteRow] = useState(0);
+
+  const { Title, Text } = Typography;
+
+  const montoCapturado = Form.useWatch("monto", form);
+  //Reinicia la pantalla
+  const handleReset = () => {
+    form.resetFields();
+    setValueSelect(1);
+    setAbonos({});
+    setSelectedRowKeys([]);
+    messageApi.info("Formulario limpiado");
+  };
+
+  //Seleccion row de tabla
+  const handleSelectionRowChange = (keys, rows) => {
+    setSelectedRowKeys(keys);
+    console.log("Filas seleccionadas:", rows);
+
+    const totalRow = rows.reduce((sum, row) => {
+      const importe = row.importe || 0;
+      return sum + importe;
+    }, 0);
+    setTotalImporteRow(totalRow);
+    console.log("## Total importe seleccionado:", totalRow);
+  };
+
+  // Detecta cambio en Monto
+  const totalDisponible = useMemo(() => {
+    const montoInicial = Number(montoCapturado) || 0;
+    const totalAbonado = Object.values(abonos).reduce(
+      (sum, value) => sum + (Number(value) || 0),
+      0,
+    );
+    return montoInicial - totalAbonado;
+  }, [montoCapturado, abonos]);
+
+  //Detecta seleccion de rows en tabla
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: handleSelectionRowChange,
+    hideSelectAll: true,
+  };
+
+  //Detecta cambio select
+  const handleSelectChange = (value) => {
+    console.log(`Valor Select: ${value}`);
+    setValueSelect(value);
+  };
+
+  //Tipo de archivo aceptado
+  const TIPO_ARCHIVOS = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "application/pdf",
+  ];
+
+  //Tamaño max.
+  const MAX_SIZE_MBS = 5;
+
+  //Formato de archivo
+  const validaFormato = (file) => {
+    const esTipoValido = TIPO_ARCHIVOS.includes(file.type);
+    if (!esTipoValido) {
+      messageApi.error("Solo se permiten archivos JPG, PNG o PDF");
+      return Upload.LIST_IGNORE;
+    }
+
+    const esTamañoValido = file.size / 1024 / 1024 < MAX_SIZE_MBS;
+    if (!esTamañoValido) {
+      messageApi.error(`El archivo debe pesar menos de ${MAX_SIZE_MBS} MB`);
+      return Upload.LIST_IGNORE;
+    }
+    return true;
+  };
+
+  // Configuración del Upload
+  const uploadProps = {
+    name: "file",
+    action: "https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload",
+    headers: { authorization: "authorization-text" },
+    onChange(info) {
+      if (info.file.status === "done") {
+        messageApi.success(`${info.file.name} cargado correctamente`);
+      } else if (info.file.status === "error") {
+        messageApi.error(`${info.file.name} falló al cargar`);
+      }
+    },
+  };
+
+  // Al enviar el formulario
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      console.log("Datos del formulario:", {
+        ...values,
+        moneda: value === 1 ? "Pesos" : "Dólares",
+      });
+
+      // aqui ejecuta el backend
+      // await api.post("/pagos", values);
+
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      messageApi.success("Datos enviados correctamente");
+      form.resetFields();
+    } catch (error) {
+      messageApi.error("Ocurrió un error al enviar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //Valida formulario
+  const onFinishFailed = () => {
+    messageApi.warning("Por favor revisa los campos del formulario");
+  };
+
+  //Detecta cambio al ingresar cantidad Abono
+  const handleAbonoChange = (key, value) => {
+    setAbonos((prev) => {
+      const next = { ...prev, [key]: value };
+      console.log("Nuevo estado abonos:", next);
+      return next;
+    });
+  };
+
+  //EJEMPLO DE MAQUETADO, QUITAR
+  const dataSource = [
+    {
+      key: "1",
+      factura: "A320452",
+      fecha: "11-05-2026",
+      moneda: "Pesos",
+      importe: 100,
+      ncFolio: "NC-001",
+      ncImporte: 200,
+      abonado: 0,
+    },
+    {
+      key: "2",
+      factura: "A320432",
+      fecha: "20-05-2026",
+      moneda: "Pesos",
+      importe: 200,
+      ncFolio: "NC-0012",
+      ncImporte: 200,
+      abonado: 0,
+    },
+    {
+      key: "3",
+      factura: "A320422",
+      fecha: "30-05-2026",
+      moneda: "Pesos",
+      importe: 500,
+      ncFolio: "NC-002",
+      ncImporte: 200,
+      abonado: 0,
+    },
+    {
+      key: "4",
+      factura: "A320452",
+      fecha: "10-05-2026",
+      moneda: "Pesos",
+      importe: 200,
+      ncFolio: "NC-021",
+      ncImporte: 120,
+      abonado: 0,
+    },
+    {
+      key: "5",
+      factura: "A320352",
+      fecha: "07-03-2026",
+      moneda: "Pesos",
+      importe: 100,
+      ncFolio: "NC-421",
+      ncImporte: 130,
+      abonado: 0,
+    },
+    {
+      key: "6",
+      factura: "A320452",
+      fecha: "10-01-2026",
+      moneda: "Pesos",
+      importe: 120,
+      ncFolio: "NC-111",
+      ncImporte: 230,
+      abonado: 0,
+    },
+  ];
+
+  const columns = [
+    {
+      title: "Folio Factura",
+      dataIndex: "factura",
+      key: "factura",
+      align: "center",
+    },
+    {
+      title: "Fecha",
+      dataIndex: "fecha",
+      key: "fecha",
+      align: "center",
+    },
+    {
+      title: "Moneda",
+      dataIndex: "moneda",
+      key: "moneda",
+      align: "center",
+      render: (moneda) => {
+        const color = moneda === "Pesos" ? "green" : "geekblue";
+        return <Tag color={color}>{moneda?.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: "Importe",
+      dataIndex: "importe",
+      key: "importe",
+      align: "center",
+    },
+    {
+      title: "Nota de Crédito",
+      key: "notaCreditoGroup",
+      children: [
+        {
+          title: "Folio",
+          dataIndex: "ncFolio",
+          key: "ncFolio",
+          align: "center",
+        },
+        {
+          title: "Importe",
+          dataIndex: "ncImporte",
+          key: "ncImporte",
+          align: "center",
+        },
+      ],
+    },
+    {
+      title: "Abonado",
+      dataIndex: "abonado",
+      key: "abonado",
+      render: (_, record) => (
+        <InputNumber
+          value={abonos[record.key] || null}
+          readOnly
+          onChange={(value) => handleAbonoChange(record.key, value)}
+          placeholder="0.00"
+          min={0}
+          //max={99}
+          precision={2}
+          style={{ width: "30%" }}
+          prefix="$"
+        />
+      ),
+    },
+  ];
+
   return (
     <>
+      {contextHolder}
+
       <Breadcrumb
-        items={[
-          {
-            title: "Pagos",
-          },
-          {
-            title: "An Application",
-          },
-        ]}
+        style={{ marginBottom: 16 }}
+        items={[{ title: "Pagos" }, { title: "Registro" }]}
       />
+
       <h2>Pagos</h2>
+
       <Card style={CardStyle} variant="borderless">
-        Aqui va el contenido del formulario y datatable
+        <Form
+          form={form}
+          name="frmPagos"
+          layout="vertical"
+          size="large"
+          initialValues={{ moneda: 1, monto: null }}
+          onFinish={onFinish}
+          onFinishFailed={onFinishFailed}
+          autoComplete="off"
+          requiredMark={false}
+        >
+          <Row gutter={16} align="bottom" wrap={false}>
+            {/* Moneda */}
+            <Col flex="0 0 220px">
+              <Form.Item
+                label="Selecciona Tipo Factura"
+                name="moneda"
+                rules={[{ required: true, message: "Selecciona Tipo Factura" }]}
+              >
+                <Select
+                  placeholder="-Seleccione Una Opción-"
+                  style={{ width: "85%" }}
+                  onChange={handleSelectChange}
+                  options={[
+                    { value: 1, label: "Pesos - MX" },
+                    { value: 2, label: "Dólares - US" },
+                    { value: 3, label: "Ventas Generales" },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+
+            {/* Comprobante */}
+            <Col flex="0 0 260px">
+              <Form.Item
+                label="Comprobante de Pago"
+                name="archivo"
+                valuePropName="fileList"
+                getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+                rules={[{ required: true, message: "Sube un archivo" }]}
+              >
+                <Upload
+                  {...uploadProps}
+                  maxCount={1}
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  beforeUpload={validaFormato}
+                >
+                  <Button icon={<UploadOutlined />}>Seleccionar archivo</Button>
+                </Upload>
+              </Form.Item>
+            </Col>
+
+            {/* Monto */}
+            <Col flex="0 0 160px">
+              <Form.Item
+                label="Ingresa Monto"
+                name="monto"
+                rules={[
+                  { required: true, message: "Ingrese el monto" },
+                  {
+                    type: "number",
+                    min: 1,
+                    message: "El monto debe ser mayor a 0",
+                  },
+                ]}
+              >
+                <InputNumber
+                  style={{ width: "100%" }}
+                  placeholder="0.00"
+                  min={0}
+                  precision={2}
+                  prefix={"$"}
+                  formatter={(v) =>
+                    `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                  parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          {/* Botones de acccion*/}
+          <Row justify="end">
+            <Col>
+              <Space size={12}>
+                <Button type="primary" htmlType="submit" loading={loading}>
+                  Guardar
+                </Button>
+                <Button
+                  onClick={handleReset}
+                  disabled={loading}
+                  icon={<ClearOutlined />}
+                >
+                  Limpiar
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+          <Divider />
+        </Form>
+        {/*AQUI VA EL DATATABLE DE LAS FACTURAS*/}
+        <Flex
+          justify="space-between"
+          align="center"
+          style={{ marginBottom: 16 }}
+          wrap="wrap"
+          gap="middle"
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Lista de Facturas
+          </Title>
+
+          <Flex align="center" gap="small">
+            <Text strong style={{ fontSize: 16 }}>
+              Total Disponible:
+            </Text>
+            <InputNumber
+              value={totalDisponible}
+              readOnly
+              formatter={(v) => `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+              parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
+              style={{
+                width: 110,
+                fontSize: 16,
+                fontWeight: "bold",
+                color: "#52c41a",
+                backgroundColor: "#f6ffed",
+              }}
+              controls={false}
+            />
+          </Flex>
+        </Flex>
+        {dataSource.length > 0 ? (
+          <Table
+            rowSelection={rowSelection}
+            columns={columns}
+            dataSource={dataSource}
+            rowKey="key"
+            size="middle"
+          />
+        ) : (
+          <Empty description="No hay facturas para mostrar" />
+        )}
       </Card>
     </>
   );

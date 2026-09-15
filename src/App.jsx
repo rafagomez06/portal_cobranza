@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/Layout";
 import Inicio from "./pages/Inicio";
 import Perfil from "./pages/Perfil";
-import Pagos from "./pages/Pagos"; //Cambiar esto por la que va quedar
+import Pagos from "./pages/Pagos";
+import Configuracion from "./pages/Configuracion";
 import Login from "./pages/Login";
 import RestablecerPass from "./pages/RestablecerPass";
 
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Inicio />} />
           <Route path="perfil" element={<Perfil />} />
+          <Route path="configuracion" element={<Configuracion />} />
           <Route path="pagos" element={<Pagos />} />{" "}
         </Route>
 

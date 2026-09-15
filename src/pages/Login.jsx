@@ -88,7 +88,17 @@ const Login = () => {
         >
           {/* Correo */}
           <Form.Item
-            label="Correo electrónico"
+            label={
+              <span
+                style={{
+                  color: "#000",
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                }}
+              >
+                Correo Electrónico
+              </span>
+            }
             name="email"
             rules={[
               { required: true, message: "Por favor ingresa tu correo" },
@@ -104,7 +114,17 @@ const Login = () => {
 
           {/* Contraseña */}
           <Form.Item
-            label="Contraseña"
+            label={
+              <span
+                style={{
+                  color: "#000",
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                }}
+              >
+                Contraseña
+              </span>
+            }
             name="password"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
@@ -121,7 +141,15 @@ const Login = () => {
           {/* Botón de inicio de sesión */}
           <Form.Item style={{ marginBottom: 8 }}>
             <Button type="primary" htmlType="submit" loading={loading} block>
-              Iniciar Sesión
+              <span
+                style={{
+                  color: "#ffffff",
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                }}
+              >
+                Iniciar Sesión
+              </span>
             </Button>
           </Form.Item>
 

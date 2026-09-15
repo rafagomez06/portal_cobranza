@@ -12,8 +12,8 @@ import {
 import { MailOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  loginContainerStyle,
-  loginCardStyle,
+  FrmContainerStyle,
+  FrmCardStyle,
   logoStyle,
   logoStyleImg,
   titleStyle,
@@ -23,7 +23,7 @@ import {
 
 const { Title, Text } = Typography;
 
-const RestablecerPass = () => {
+const Configuracion = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -57,8 +57,8 @@ const RestablecerPass = () => {
   };
 
   return (
-    <div style={loginContainerStyle}>
-      <Card style={loginCardStyle} variant="borderless">
+    <div style={FrmContainerStyle}>
+      <Card style={FrmCardStyle} variant="borderless">
         {/* Logo / Título */}
         <div style={logoStyleImg}>
           <img
@@ -193,7 +193,15 @@ const RestablecerPass = () => {
           {/* Botón de Confirmar Cambio de Pass */}
           <Form.Item style={{ marginBottom: 8 }}>
             <Button type="primary" htmlType="submit" loading={loading} block>
-              Cambiar Contraseña
+              <span
+                style={{
+                  color: "#ffffff",
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                }}
+              >
+                Cambiar Contraseña
+              </span>
             </Button>
           </Form.Item>
         </Form>
@@ -202,4 +210,4 @@ const RestablecerPass = () => {
   );
 };
 
-export default RestablecerPass;
+export default Configuracion;

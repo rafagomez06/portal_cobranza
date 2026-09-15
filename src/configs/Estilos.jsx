@@ -22,8 +22,21 @@ export const loginContainerStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(135deg, #001529 0%, #003a70 100%)",
+  background: "linear-gradient(135deg, #e0ebe8 0%, #eaeff1 100%)",
   padding: "20px",
+};
+export const FrmContainerStyle = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  //background: "linear-gradient(135deg, #001529 0%, #003a70 100%)",
+  padding: "20px",
+};
+export const FrmCardStyle = {
+  width: "100%",
+  maxWidth: 520,
+  borderRadius: 12,
 };
 
 export const CardStyle = {
@@ -68,4 +81,17 @@ export const logoStyleImg = {
   justifyContent: "center",
   alignItems: "center",
   marginBottom: 16,
+};
+
+//Radios Tipo Moneda
+export const radioVerdeSelected = {
+  backgroundColor: "#52c41a",
+  borderColor: "#52c41a",
+  color: "#fff",
+};
+
+export const radioAzulSelected = {
+  backgroundColor: "#1890ff",
+  borderColor: "#1890ff",
+  color: "#fff",
 };
