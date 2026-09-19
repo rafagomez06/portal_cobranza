@@ -1,20 +1,15 @@
 import React, { useState, useMemo } from "react";
 import {
   Card,
-  Radio,
   Breadcrumb,
   Form,
-  Input,
   Button,
   Empty,
   Upload,
   Divider,
-  Tag,
   Table,
   Flex,
-  Space,
   Row,
-  Dropdown,
   Col,
   Typography,
   message,
@@ -23,17 +18,12 @@ import {
 } from "antd";
 import {
   UploadOutlined,
-  SendOutlined,
-  EllipsisOutlined,
   SaveOutlined,
   SearchOutlined,
   ClearOutlined,
 } from "@ant-design/icons";
-import {
-  CardStyle,
-  radioVerdeSelected,
-  radioAzulSelected,
-} from "../configs/Estilos";
+import { CardStyle } from "../configs/Estilos";
+import { useCatalogos } from "../hooks/useCatalogos";
 
 const Pagos = () => {
   const [form] = Form.useForm();
@@ -43,11 +33,18 @@ const Pagos = () => {
   const [abonos, setAbonos] = useState({});
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [totalImporteRow, setTotalImporteRow] = useState(0);
+  const { tiposFacturas, isLoading, isError, error } = useCatalogos();
 
   const [searchText, setSearchText] = useState("");
   const { Title, Text } = Typography;
 
   const montoCapturado = Form.useWatch("monto", form);
+
+  //LLena valores combo tipos factura
+  const options = tiposFacturas.map((tipo) => ({
+    value: tipo.idTipoFactura,
+    label: tipo.descripcion,
+  }));
 
   //Reinicia la pantalla
   const handleReset = () => {
@@ -128,6 +125,7 @@ const Pagos = () => {
     action: "https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload",
     headers: { authorization: "authorization-text" },
     onChange(info) {
+      console.log("info", info);
       if (info.file.status === "done") {
         messageApi.success(`${info.file.name} cargado correctamente`);
       } else if (info.file.status === "error") {
@@ -160,16 +158,7 @@ const Pagos = () => {
 
   //Valida formulario
   const onFinishFailed = () => {
-    messageApi.warning("Por favor revisa los campos del formulario");
-  };
-
-  //Detecta cambio al ingresar cantidad Abono
-  const handleAbonoChange = (key, value) => {
-    setAbonos((prev) => {
-      const next = { ...prev, [key]: value };
-      console.log("Nuevo estado abonos:", next);
-      return next;
-    });
+    messageApi.warning("Por favor, completa los campos requeridos.");
   };
 
   //EJEMPLO DE MAQUETADO, QUITAR
@@ -315,10 +304,6 @@ const Pagos = () => {
       dataIndex: "moneda",
       key: "moneda",
       align: "center",
-      render: (moneda) => {
-        const color = moneda === "Pesos" ? "green" : "geekblue";
-        return <Tag color={color}>{moneda?.toUpperCase()}</Tag>;
-      },
     },
     {
       title: "Importe",
@@ -350,21 +335,9 @@ const Pagos = () => {
       key: "abonado",
       align: "center",
       width: 150,
-      render: (_, record) => (
-        <InputNumber
-          value={abonos[record.key] || null}
-          onChange={(value) => handleAbonoChange(record.key, value)}
-          placeholder="0.00"
-          min={0}
-          //max={99}
-          precision={2}
-          style={{ width: "100%" }}
-          prefix="$"
-        />
-      ),
     },
     {
-      title: "Aclaración",
+      title: "Por Aclarar",
       dataIndex: "aclaracion",
       key: "aclaracion",
       align: "center",
@@ -388,29 +361,31 @@ const Pagos = () => {
           name="frmPagos"
           layout="vertical"
           size="large"
-          initialValues={{ moneda: 1, monto: null }}
+          initialValues={{ valueSelect: null, monto: null }}
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
           autoComplete="off"
           requiredMark={false}
         >
-          <Row gutter={16} align="bottom" wrap={false}>
+          <Row gutter={16} align="start" wrap={false}>
             {/* Moneda */}
             <Col flex="0 0 220px">
               <Form.Item
                 label="Selecciona Tipo Factura"
-                name="moneda"
+                name="valueSelect"
                 rules={[{ required: true, message: "Selecciona Tipo Factura" }]}
               >
                 <Select
-                  placeholder="-Seleccione Una Opción-"
-                  style={{ width: "85%" }}
+                  placeholder="Seleccione Opción"
+                  style={{ width: "100%" }}
                   onChange={handleSelectChange}
-                  options={[
-                    { value: 1, label: "Pesos - MX" },
-                    { value: 2, label: "Dólares - US" },
-                    { value: 3, label: "Ventas Generales" },
-                  ]}
+                  options={options}
+                  loading={isLoading}
+                  disabled={isLoading || isError}
+                  status={isError ? "error" : undefined}
+                  notFoundContent={
+                    isError ? `Error: ${error?.message}` : "Sin datos"
+                  }
                 />
               </Form.Item>
             </Col>
@@ -436,7 +411,6 @@ const Pagos = () => {
                 </Upload>
               </Form.Item>
             </Col>
-
             {/* Monto */}
             <Col flex="0 0 160px">
               <Form.Item
@@ -464,11 +438,15 @@ const Pagos = () => {
                 />
               </Form.Item>
             </Col>
-          </Row>
-          {/* Botones de acccion*/}
-          <Row justify="end">
-            <Col>
-              <Space size={12}>
+
+            {/* Botones de acccion*/}
+            <Col flex="auto">
+              <Flex
+                justify="flex-end"
+                align="flex-end"
+                gap="small"
+                style={{ height: "100%" }}
+              >
                 <Button
                   color="green"
                   variant="solid"
@@ -493,52 +471,57 @@ const Pagos = () => {
                 >
                   Limpiar
                 </Button>
-              </Space>
+              </Flex>
             </Col>
           </Row>
+
           <Divider />
         </Form>
         {/*AQUI VA EL DATATABLE DE LAS FACTURAS*/}
-        <Flex
-          justify="space-between"
-          align="center"
-          style={{ marginBottom: 16 }}
-          wrap="wrap"
-          gap="middle"
-        >
-          <Title level={4} style={{ margin: 0 }}>
-            Lista de Facturas
-          </Title>
+        {dataSource.length > 1 ? (
+          <>
+            <Flex
+              justify="space-between"
+              align="center"
+              style={{ marginBottom: 16 }}
+              wrap="wrap"
+              gap="middle"
+            >
+              <Title level={4} style={{ margin: 0 }}>
+                Lista de Facturas
+              </Title>
+              <Flex align="center" gap="small">
+                <Text strong style={{ fontSize: 16 }}>
+                  Total Disponible:
+                </Text>
+                <InputNumber
+                  value={totalDisponible}
+                  readOnly
+                  formatter={(v) =>
+                    `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                  parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
+                  style={{
+                    width: 110,
+                    fontSize: 16,
+                    fontWeight: "bold",
+                    color: "#52c41a",
+                    backgroundColor: "#f6ffed",
+                  }}
+                  controls={false}
+                />
+              </Flex>
+            </Flex>
 
-          <Flex align="center" gap="small">
-            <Text strong style={{ fontSize: 16 }}>
-              Total Disponible:
-            </Text>
-            <InputNumber
-              value={totalDisponible}
-              readOnly
-              formatter={(v) => `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-              parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
-              style={{
-                width: 110,
-                fontSize: 16,
-                fontWeight: "bold",
-                color: "#52c41a",
-                backgroundColor: "#f6ffed",
-              }}
-              controls={false}
+            <Table
+              rowSelection={rowSelection}
+              columns={columns}
+              dataSource={dataSource}
+              rowKey="key"
+              size="middle"
+              pagination={{ pageSize: 10 }}
             />
-          </Flex>
-        </Flex>
-        {dataSource.length > 0 ? (
-          <Table
-            rowSelection={rowSelection}
-            columns={columns}
-            dataSource={dataSource}
-            rowKey="key"
-            size="large"
-            pagination={{ pageSize: 10 }}
-          />
+          </>
         ) : (
           <Empty description="No hay facturas para mostrar" />
         )}
