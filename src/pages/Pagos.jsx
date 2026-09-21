@@ -22,21 +22,37 @@ import {
   SearchOutlined,
   ClearOutlined,
 } from "@ant-design/icons";
+import DataTable from "../components/DateTable";
+
 import { CardStyle } from "../configs/Estilos";
 import { useCatalogos } from "../hooks/useCatalogos";
+import { useListadoFacturas } from "../hooks/useListadoFacturas";
+import { GeneraColumnasCabecero } from "../utils/DataTableUtils";
+const { Title, Text } = Typography;
 
 const Pagos = () => {
   const [form] = Form.useForm();
+  const [parametro, setParametro] = useState(null);
   const [valueSelect, setValueSelect] = useState(1);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const [abonos, setAbonos] = useState({});
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [totalImporteRow, setTotalImporteRow] = useState(0);
-  const { tiposFacturas, isLoading, isError, error } = useCatalogos();
 
-  const [searchText, setSearchText] = useState("");
-  const { Title, Text } = Typography;
+  const {
+    tiposFacturas,
+    isLoading: isLoadingCatalogos,
+    isError,
+    error,
+  } = useCatalogos();
+
+  const {
+    listadoFacturas,
+    isLoading: isLoadingFacturas,
+    fetchListadoFacturas,
+    resetListado,
+  } = useListadoFacturas(parametro);
 
   const montoCapturado = Form.useWatch("monto", form);
 
@@ -45,6 +61,35 @@ const Pagos = () => {
     value: tipo.idTipoFactura,
     label: tipo.descripcion,
   }));
+
+  const columns = useMemo(() => {
+    const baseColumns = GeneraColumnasCabecero(listadoFacturas.t_header);
+    return [...baseColumns];
+  }, [listadoFacturas.t_header, abonos]);
+
+  //  Normalizar t_body agregando un `key` para Ant Design
+  const dataSource = useMemo(() => {
+    return (listadoFacturas.t_body ?? []).map((row, index) => ({
+      ...row,
+      key: row.idenc ?? row.factura?.trim() ?? String(index),
+    }));
+  }, [listadoFacturas.t_body]);
+
+  //  Buscar facturas al hacer clic
+  const handleBuscarFacturas = async () => {
+    try {
+      const parametro = "DI456";
+      setParametro(parametro);
+      messageApi.success("Facturas cargadas correctamente");
+    } catch (err) {
+      if (err?.errorFields) {
+        // Error de validación del formulario
+        messageApi.warning("Selecciona el tipo de factura");
+      } else {
+        messageApi.error(err.message || "Error al cargar facturas");
+      }
+    }
+  };
 
   //Reinicia la pantalla
   const handleReset = () => {
@@ -62,9 +107,9 @@ const Pagos = () => {
     console.log("Filas seleccionadas:", rows);
 
     const totalRow = rows.reduce((sum, row) => {
-      const importe = row.importe;
+      const importe = row.importe_factura;
       return sum + importe;
-    }, 0);
+    });
     setTotalImporteRow(totalRow);
     console.log("## Total importe seleccionado:", totalRow);
   };
@@ -162,187 +207,178 @@ const Pagos = () => {
   };
 
   //EJEMPLO DE MAQUETADO, QUITAR
-  const dataSource = [
-    {
-      key: "1",
-      factura: "A320452",
-      fecha: "11-05-2026",
-      moneda: "Pesos",
-      importe: 100,
-      ncFolio: "NC-001",
-      ncImporte: 200,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "2",
-      factura: "A320432",
-      fecha: "20-05-2026",
-      moneda: "Pesos",
-      importe: 200,
-      ncFolio: "NC-0012",
-      ncImporte: 200,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "3",
-      factura: "A320422",
-      fecha: "30-05-2026",
-      moneda: "Pesos",
-      importe: 500,
-      ncFolio: "NC-002",
-      ncImporte: 200,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "4",
-      factura: "A320452",
-      fecha: "10-05-2026",
-      moneda: "Pesos",
-      importe: 200,
-      ncFolio: "NC-021",
-      ncImporte: 120,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "5",
-      factura: "A320352",
-      fecha: "07-03-2026",
-      moneda: "Pesos",
-      importe: 100,
-      ncFolio: "NC-421",
-      ncImporte: 130,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "6",
-      factura: "A320452",
-      fecha: "10-01-2026",
-      moneda: "Pesos",
-      importe: 120,
-      ncFolio: "NC-111",
-      ncImporte: 230,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "7",
-      factura: "A320452",
-      fecha: "10-01-2026",
-      moneda: "Pesos",
-      importe: 120,
-      ncFolio: "NC-111",
-      ncImporte: 230,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "8",
-      factura: "A320452",
-      fecha: "10-01-2026",
-      moneda: "Pesos",
-      importe: 120,
-      ncFolio: "NC-111",
-      ncImporte: 230,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "9",
-      factura: "A320452",
-      fecha: "10-01-2026",
-      moneda: "Pesos",
-      importe: 120,
-      ncFolio: "NC-111",
-      ncImporte: 230,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "10",
-      factura: "A320452",
-      fecha: "10-01-2026",
-      moneda: "Pesos",
-      importe: 120,
-      ncFolio: "NC-111",
-      ncImporte: 230,
-      abonado: 0,
-      aclaracion: 0,
-    },
-    {
-      key: "11",
-      factura: "A320452",
-      fecha: "10-01-2026",
-      moneda: "Pesos",
-      importe: 120,
-      ncFolio: "NC-111",
-      ncImporte: 230,
-      abonado: 0,
-      aclaracion: 0,
-    },
-  ];
+  // const dataSource = [
+  //   {
+  //     key: "1",
+  //     factura: "A320452",
+  //     fecha: "11-05-2026",
+  //     moneda: "Pesos",
+  //     importe: 100,
+  //     ncFolio: "NC-001",
+  //     ncImporte: 200,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "2",
+  //     factura: "A320432",
+  //     fecha: "20-05-2026",
+  //     moneda: "Pesos",
+  //     importe: 200,
+  //     ncFolio: "NC-0012",
+  //     ncImporte: 200,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "3",
+  //     factura: "A320422",
+  //     fecha: "30-05-2026",
+  //     moneda: "Pesos",
+  //     importe: 500,
+  //     ncFolio: "NC-002",
+  //     ncImporte: 200,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "4",
+  //     factura: "A320452",
+  //     fecha: "10-05-2026",
+  //     moneda: "Pesos",
+  //     importe: 200,
+  //     ncFolio: "NC-021",
+  //     ncImporte: 120,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "5",
+  //     factura: "A320352",
+  //     fecha: "07-03-2026",
+  //     moneda: "Pesos",
+  //     importe: 100,
+  //     ncFolio: "NC-421",
+  //     ncImporte: 130,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "6",
+  //     factura: "A320452",
+  //     fecha: "10-01-2026",
+  //     moneda: "Pesos",
+  //     importe: 120,
+  //     ncFolio: "NC-111",
+  //     ncImporte: 230,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "7",
+  //     factura: "A320452",
+  //     fecha: "10-01-2026",
+  //     moneda: "Pesos",
+  //     importe: 120,
+  //     ncFolio: "NC-111",
+  //     ncImporte: 230,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "8",
+  //     factura: "A320452",
+  //     fecha: "10-01-2026",
+  //     moneda: "Pesos",
+  //     importe: 120,
+  //     ncFolio: "NC-111",
+  //     ncImporte: 230,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "9",
+  //     factura: "A320452",
+  //     fecha: "10-01-2026",
+  //     moneda: "Pesos",
+  //     importe: 120,
+  //     ncFolio: "NC-111",
+  //     ncImporte: 230,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "10",
+  //     factura: "A320452",
+  //     fecha: "10-01-2026",
+  //     moneda: "Pesos",
+  //     importe: 120,
+  //     ncFolio: "NC-111",
+  //     ncImporte: 230,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  //   {
+  //     key: "11",
+  //     factura: "A320452",
+  //     fecha: "10-01-2026",
+  //     moneda: "Pesos",
+  //     importe: 120,
+  //     ncFolio: "NC-111",
+  //     ncImporte: 230,
+  //     abonado: 0,
+  //     aclaracion: 0,
+  //   },
+  // ];
 
-  const columns = [
-    {
-      title: "Folio Factura",
-      dataIndex: "factura",
-      key: "factura",
-      align: "center",
-    },
-    {
-      title: "Fecha",
-      dataIndex: "fecha",
-      key: "fecha",
-      align: "center",
-    },
-    {
-      title: "Moneda",
-      dataIndex: "moneda",
-      key: "moneda",
-      align: "center",
-    },
-    {
-      title: "Importe",
-      dataIndex: "importe",
-      key: "importe",
-      align: "center",
-    },
-    {
-      title: "Nota de Crédito",
-      key: "notaCreditoGroup",
-      children: [
-        {
-          title: "Folio",
-          dataIndex: "ncFolio",
-          key: "ncFolio",
-          align: "center",
-        },
-        {
-          title: "Importe",
-          dataIndex: "ncImporte",
-          key: "ncImporte",
-          align: "center",
-        },
-      ],
-    },
-    {
-      title: "Abonado",
-      dataIndex: "abonado",
-      key: "abonado",
-      align: "center",
-      width: 150,
-    },
-    {
-      title: "Por Aclarar",
-      dataIndex: "aclaracion",
-      key: "aclaracion",
-      align: "center",
-    },
-  ];
+  // const columns = [
+  //   {
+  //     title: "Folio Factura",
+  //     dataIndex: "factura",
+  //     key: "factura",
+  //   },
+  //   {
+  //     title: "Fecha",
+  //     dataIndex: "fecha",
+  //     key: "fecha",
+  //   },
+  //   {
+  //     title: "Moneda",
+  //     dataIndex: "moneda",
+  //     key: "moneda",
+  //   },
+  //   {
+  //     title: "Importe",
+  //     dataIndex: "importe",
+  //     key: "importe",
+  //   },
+  //   {
+  //     title: "Nota de Crédito",
+  //     key: "notaCreditoGroup",
+  //     children: [
+  //       {
+  //         title: "Folio",
+  //         dataIndex: "ncFolio",
+  //         key: "ncFolio",
+  //       },
+  //       {
+  //         title: "Importe",
+  //         dataIndex: "ncImporte",
+  //         key: "ncImporte",
+  //       },
+  //     ],
+  //   },
+  //   {
+  //     title: "Abonado",
+  //     dataIndex: "abonado",
+  //     key: "abonado",
+  //   },
+  //   {
+  //     title: "Por Aclarar",
+  //     dataIndex: "aclaracion",
+  //     key: "aclaracion",
+  //   },
+  // ];
 
   return (
     <>
@@ -380,8 +416,8 @@ const Pagos = () => {
                   style={{ width: "100%" }}
                   onChange={handleSelectChange}
                   options={options}
-                  loading={isLoading}
-                  disabled={isLoading || isError}
+                  loading={isLoadingCatalogos}
+                  disabled={isLoadingCatalogos || isError}
                   status={isError ? "error" : undefined}
                   notFoundContent={
                     isError ? `Error: ${error?.message}` : "Sin datos"
@@ -450,7 +486,8 @@ const Pagos = () => {
                 <Button
                   color="green"
                   variant="solid"
-                  loading={loading}
+                  loading={isLoadingFacturas}
+                  onClick={handleBuscarFacturas}
                   icon={<SearchOutlined />}
                 >
                   Buscar Facturas
@@ -513,13 +550,12 @@ const Pagos = () => {
               </Flex>
             </Flex>
 
-            <Table
+            <DataTable
+              tHeader={listadoFacturas.t_header}
+              tBody={listadoFacturas.t_body}
+              loading={loading}
+              pagination={{ pageSize: 5, showSizeChanger: true }}
               rowSelection={rowSelection}
-              columns={columns}
-              dataSource={dataSource}
-              rowKey="key"
-              size="middle"
-              pagination={{ pageSize: 10 }}
             />
           </>
         ) : (

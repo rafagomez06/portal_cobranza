@@ -15,7 +15,7 @@ const App = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5, // datos "frescos" por 5 minutos — no refetcha en ese tiempo
+        staleTime: 1000 * 60 * 5, // datos "frescos" por 5 minutos no refetcha en ese tiempo
         gcTime: 1000 * 60 * 10, // caché guardada 10 minutos aunque no haya componentes usándola
         refetchOnWindowFocus: false, // no refetcha al cambiar de pestaña o ventana
         refetchOnMount: false, // no refetcha al montar el componente si ya hay datos en caché
