@@ -9,7 +9,12 @@ import {
   Divider,
   Flex,
 } from "antd";
-import { MailOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
+import {
+  MailOutlined,
+  LockOutlined,
+  LoginOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
 import {
   loginContainerStyle,
@@ -86,6 +91,38 @@ const Login = () => {
           autoComplete="off"
           requiredMark={false}
         >
+          {/* Codigo de Cliente */}
+          <Form.Item
+            label={
+              <span
+                style={{
+                  color: "#000",
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                }}
+              >
+                Codigo de Cliente:
+              </span>
+            }
+            name="cliente"
+            rules={[
+              {
+                required: true,
+                message: "Por favor ingresa tu codigo de cliente",
+              },
+              {
+                type: "string",
+                message: "Ingresa un codigo de cliente válido",
+              },
+            ]}
+          >
+            <Input
+              prefix={<UserOutlined style={{ color: "#bfbfbf" }} />}
+              placeholder="ABC123"
+              autoComplete="cod-cliente"
+            />
+          </Form.Item>
+
           {/* Correo */}
           <Form.Item
             label={
@@ -96,7 +133,7 @@ const Login = () => {
                   fontSize: "16px",
                 }}
               >
-                Correo Electrónico
+                Correo Electrónico:
               </span>
             }
             name="email"
@@ -122,7 +159,7 @@ const Login = () => {
                   fontSize: "16px",
                 }}
               >
-                Contraseña
+                Contraseña:
               </span>
             }
             name="password"

@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+
 import {
   Card,
   Breadcrumb,
   Form,
+  Popover,
   Button,
   Empty,
   Upload,
   Divider,
-  Table,
   Flex,
   Row,
   Col,
@@ -23,22 +24,23 @@ import {
   ClearOutlined,
 } from "@ant-design/icons";
 import DataTable from "../components/DateTable";
-
+import { NumeroALetras } from "../utils/NumeroALetras";
 import { CardStyle } from "../configs/Estilos";
 import { useCatalogos } from "../hooks/useCatalogos";
 import { useListadoFacturas } from "../hooks/useListadoFacturas";
-import { GeneraColumnasCabecero } from "../utils/DataTableUtils";
 const { Title, Text } = Typography;
 
 const Pagos = () => {
   const [form] = Form.useForm();
   const [parametro, setParametro] = useState(null);
-  const [valueSelect, setValueSelect] = useState(1);
+  const [valueSelect, setValueSelect] = useState(0);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const [abonos, setAbonos] = useState({});
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [totalImporteRow, setTotalImporteRow] = useState(0);
+  const [rowSelectorActivo, setRowSelectorActivo] = useState(false);
+  const [esSelectFactActivo, setEsSelectFactActivo] = useState(true);
 
   const {
     tiposFacturas,
@@ -54,7 +56,23 @@ const Pagos = () => {
     resetListado,
   } = useListadoFacturas(parametro);
 
+  //Reinicia la pantalla
+  const handleReset = () => {
+    form.resetFields();
+    setValueSelect(0);
+    setAbonos({});
+    setSelectedRowKeys([]);
+    setTotalImporteRow(0);
+    setEsSelectFactActivo(true);
+    messageApi.info("Formulario limpiado");
+  };
+
   const montoCapturado = Form.useWatch("monto", form);
+  useEffect(() => {
+    const monto = Number(montoCapturado) || 0;
+    setRowSelectorActivo(monto > 0);
+  }, [montoCapturado]);
+  //########################################################33
 
   //LLena valores combo tipos factura
   const options = tiposFacturas.map((tipo) => ({
@@ -62,12 +80,7 @@ const Pagos = () => {
     label: tipo.descripcion,
   }));
 
-  const columns = useMemo(() => {
-    const baseColumns = GeneraColumnasCabecero(listadoFacturas.t_header);
-    return [...baseColumns];
-  }, [listadoFacturas.t_header, abonos]);
-
-  //  Normalizar t_body agregando un `key` para Ant Design
+  //  Normalizar t_body agregando un "key" para Ant Design
   const dataSource = useMemo(() => {
     return (listadoFacturas.t_body ?? []).map((row, index) => ({
       ...row,
@@ -75,42 +88,39 @@ const Pagos = () => {
     }));
   }, [listadoFacturas.t_body]);
 
-  //  Buscar facturas al hacer clic
+  //  Buscar facturas al hacer click
   const handleBuscarFacturas = async () => {
     try {
-      const parametro = "DI456";
+      const parametro = "DI456"; // DUMMY QUITAR
       setParametro(parametro);
       messageApi.success("Facturas cargadas correctamente");
     } catch (err) {
       if (err?.errorFields) {
         // Error de validación del formulario
-        messageApi.warning("Selecciona el tipo de factura");
+        messageApi.warning("Selecciona el tipo de factura*");
       } else {
         messageApi.error(err.message || "Error al cargar facturas");
       }
     }
   };
 
-  //Reinicia la pantalla
-  const handleReset = () => {
-    form.resetFields();
-    setValueSelect(1);
-    setAbonos({});
-    setSelectedRowKeys([]);
-    setTotalImporteRow(0);
-    messageApi.info("Formulario limpiado");
-  };
-
-  //Seleccion row de tabla
+  //Seleccion row de tabla, Obtiene data de row
   const handleSelectionRowChange = (keys, rows) => {
     setSelectedRowKeys(keys);
     console.log("Filas seleccionadas:", rows);
 
-    const totalRow = rows.reduce((sum, row) => {
-      const importe = row.importe_factura;
-      return sum + importe;
-    });
+    // Suma en centavos para evitar error de flotante
+    const totalCentavos = rows.reduce(
+      (sum, row) => sum + Math.round((Number(row.importe_factura) || 0) * 100),
+      0,
+    );
+    const totalRow = totalCentavos / 100;
     setTotalImporteRow(totalRow);
+
+    // Validación
+    if (totalRow > (Number(montoCapturado) || 0)) {
+      messageApi.warning("El total disponible excede el monto capturado");
+    }
     console.log("## Total importe seleccionado:", totalRow);
   };
 
@@ -121,7 +131,9 @@ const Pagos = () => {
       (sum, value) => sum + (Number(value) || 0),
       0,
     );
-    return montoInicial - totalAbonado - totalImporteRow;
+    const auxtotal = montoInicial - totalAbonado - totalImporteRow;
+
+    return Math.round(auxtotal * 100) / 100; // número, no string
   }, [montoCapturado, abonos, totalImporteRow]);
 
   //Detecta seleccion de rows en tabla
@@ -135,6 +147,7 @@ const Pagos = () => {
   const handleSelectChange = (value) => {
     console.log(`Valor Select: ${value}`);
     setValueSelect(value);
+    setEsSelectFactActivo(false);
   };
 
   //Tipo de archivo aceptado
@@ -206,180 +219,29 @@ const Pagos = () => {
     messageApi.warning("Por favor, completa los campos requeridos.");
   };
 
-  //EJEMPLO DE MAQUETADO, QUITAR
-  // const dataSource = [
-  //   {
-  //     key: "1",
-  //     factura: "A320452",
-  //     fecha: "11-05-2026",
-  //     moneda: "Pesos",
-  //     importe: 100,
-  //     ncFolio: "NC-001",
-  //     ncImporte: 200,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "2",
-  //     factura: "A320432",
-  //     fecha: "20-05-2026",
-  //     moneda: "Pesos",
-  //     importe: 200,
-  //     ncFolio: "NC-0012",
-  //     ncImporte: 200,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "3",
-  //     factura: "A320422",
-  //     fecha: "30-05-2026",
-  //     moneda: "Pesos",
-  //     importe: 500,
-  //     ncFolio: "NC-002",
-  //     ncImporte: 200,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "4",
-  //     factura: "A320452",
-  //     fecha: "10-05-2026",
-  //     moneda: "Pesos",
-  //     importe: 200,
-  //     ncFolio: "NC-021",
-  //     ncImporte: 120,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "5",
-  //     factura: "A320352",
-  //     fecha: "07-03-2026",
-  //     moneda: "Pesos",
-  //     importe: 100,
-  //     ncFolio: "NC-421",
-  //     ncImporte: 130,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "6",
-  //     factura: "A320452",
-  //     fecha: "10-01-2026",
-  //     moneda: "Pesos",
-  //     importe: 120,
-  //     ncFolio: "NC-111",
-  //     ncImporte: 230,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "7",
-  //     factura: "A320452",
-  //     fecha: "10-01-2026",
-  //     moneda: "Pesos",
-  //     importe: 120,
-  //     ncFolio: "NC-111",
-  //     ncImporte: 230,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "8",
-  //     factura: "A320452",
-  //     fecha: "10-01-2026",
-  //     moneda: "Pesos",
-  //     importe: 120,
-  //     ncFolio: "NC-111",
-  //     ncImporte: 230,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "9",
-  //     factura: "A320452",
-  //     fecha: "10-01-2026",
-  //     moneda: "Pesos",
-  //     importe: 120,
-  //     ncFolio: "NC-111",
-  //     ncImporte: 230,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "10",
-  //     factura: "A320452",
-  //     fecha: "10-01-2026",
-  //     moneda: "Pesos",
-  //     importe: 120,
-  //     ncFolio: "NC-111",
-  //     ncImporte: 230,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  //   {
-  //     key: "11",
-  //     factura: "A320452",
-  //     fecha: "10-01-2026",
-  //     moneda: "Pesos",
-  //     importe: 120,
-  //     ncFolio: "NC-111",
-  //     ncImporte: 230,
-  //     abonado: 0,
-  //     aclaracion: 0,
-  //   },
-  // ];
+  // Helper para generar el contenido del Popover
+  const renderPopoverContent = (monto) => {
+    const num = Number(monto);
+    let moneda = valueSelect;
+    switch (moneda) {
+      case 1:
+        moneda = "P";
+        break;
+      case 2:
+        moneda = "D";
+        break;
+      case 3:
+        moneda = "V";
+        break;
+    }
 
-  // const columns = [
-  //   {
-  //     title: "Folio Factura",
-  //     dataIndex: "factura",
-  //     key: "factura",
-  //   },
-  //   {
-  //     title: "Fecha",
-  //     dataIndex: "fecha",
-  //     key: "fecha",
-  //   },
-  //   {
-  //     title: "Moneda",
-  //     dataIndex: "moneda",
-  //     key: "moneda",
-  //   },
-  //   {
-  //     title: "Importe",
-  //     dataIndex: "importe",
-  //     key: "importe",
-  //   },
-  //   {
-  //     title: "Nota de Crédito",
-  //     key: "notaCreditoGroup",
-  //     children: [
-  //       {
-  //         title: "Folio",
-  //         dataIndex: "ncFolio",
-  //         key: "ncFolio",
-  //       },
-  //       {
-  //         title: "Importe",
-  //         dataIndex: "ncImporte",
-  //         key: "ncImporte",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     title: "Abonado",
-  //     dataIndex: "abonado",
-  //     key: "abonado",
-  //   },
-  //   {
-  //     title: "Por Aclarar",
-  //     dataIndex: "aclaracion",
-  //     key: "aclaracion",
-  //   },
-  // ];
-
+    if (!num || isNaN(num)) return <span>$0.00</span>;
+    return (
+      <div style={{ maxWidth: 260, fontWeight: 500, color: "#1677ff" }}>
+        {NumeroALetras(num, moneda)}
+      </div>
+    );
+  };
   return (
     <>
       {contextHolder}
@@ -389,7 +251,7 @@ const Pagos = () => {
         items={[{ title: "Pagos" }, { title: "Registro" }]}
       />
 
-      <h2>Pagos</h2>
+      <h2>Registrar Pagos</h2>
 
       <Card style={CardStyle} variant="borderless">
         <Form
@@ -409,7 +271,9 @@ const Pagos = () => {
               <Form.Item
                 label="Selecciona Tipo Factura"
                 name="valueSelect"
-                rules={[{ required: true, message: "Selecciona Tipo Factura" }]}
+                rules={[
+                  { required: true, message: "Selecciona Tipo Factura *" },
+                ]}
               >
                 <Select
                   placeholder="Seleccione Opción"
@@ -434,7 +298,7 @@ const Pagos = () => {
                 valuePropName="fileList"
                 getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
                 rules={[
-                  { required: true, message: "Sube Comprobante de Pago" },
+                  { required: true, message: "Sube Comprobante de Pago *" },
                 ]}
               >
                 <Upload
@@ -453,11 +317,11 @@ const Pagos = () => {
                 label="Ingresa Monto"
                 name="monto"
                 rules={[
-                  { required: true, message: "Ingrese el monto" },
+                  { required: true, message: "Ingrese el monto *" },
                   {
                     type: "number",
                     min: 1,
-                    message: "El monto debe ser mayor a 0",
+                    message: "El monto debe ser mayor a 0 *",
                   },
                 ]}
               >
@@ -465,6 +329,7 @@ const Pagos = () => {
                   style={{ width: "100%" }}
                   placeholder="0.00"
                   min={0}
+                  disabled={esSelectFactActivo}
                   precision={2}
                   prefix={"$"}
                   formatter={(v) =>
@@ -514,7 +379,7 @@ const Pagos = () => {
 
           <Divider />
         </Form>
-        {/*AQUI VA EL DATATABLE DE LAS FACTURAS*/}
+        {/* DATATABLE DE LAS FACTURAS*/}
         {dataSource.length > 1 ? (
           <>
             <Flex
@@ -528,34 +393,101 @@ const Pagos = () => {
                 Lista de Facturas
               </Title>
               <Flex align="center" gap="small">
-                <Text strong style={{ fontSize: 16 }}>
+                <Text
+                  strong
+                  style={{
+                    fontSize: 16,
+                    backgroundColor: "#d9f7be",
+                    borderRadius: 10,
+                    padding: 8,
+                  }}
+                >
                   Total Disponible:
                 </Text>
-                <InputNumber
-                  value={totalDisponible}
-                  readOnly
-                  formatter={(v) =>
-                    `$ ${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
-                  style={{
-                    width: 110,
-                    fontSize: 16,
-                    fontWeight: "bold",
-                    color: "#52c41a",
-                    backgroundColor: "#f6ffed",
-                  }}
-                  controls={false}
-                />
+                <Popover
+                  content={renderPopoverContent(totalDisponible)}
+                  title="Cantidad en letras"
+                  trigger="hover"
+                  placement="left"
+                >
+                  <InputNumber
+                    value={totalDisponible}
+                    readOnly
+                    formatter={(v) =>
+                      `$ ${Number(v).toLocaleString("es-MX", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`
+                    }
+                    parser={(v) => Number(String(v).replace(/[^\d.-]/g, ""))}
+                    style={{
+                      width: 160,
+                      fontSize: 16,
+                      fontWeight: "bold",
+                      color: "#52c41a",
+                      backgroundColor: "#f6ffed",
+                    }}
+                    controls={false}
+                  />
+                </Popover>
               </Flex>
             </Flex>
-
+            <Flex
+              justify="flex-end"
+              align="center"
+              style={{ marginBottom: 16 }}
+              wrap="wrap"
+              gap="middle"
+            >
+              <Flex align="center" gap="small">
+                <Text
+                  strong
+                  style={{
+                    fontSize: 16,
+                    backgroundColor: "#bae0ff",
+                    borderRadius: 10,
+                    padding: 8,
+                  }}
+                >
+                  Total Abonado:
+                </Text>
+                <Popover
+                  content={renderPopoverContent(totalImporteRow)}
+                  title="Cantidad en letras"
+                  trigger="hover"
+                  placement="left"
+                >
+                  <InputNumber
+                    value={totalImporteRow}
+                    readOnly
+                    formatter={(v) =>
+                      `$ ${Number(v).toLocaleString("es-MX", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`
+                    }
+                    parser={(v) => Number(String(v).replace(/[^\d.-]/g, ""))}
+                    style={{
+                      width: 160,
+                      fontSize: 16,
+                      fontWeight: "bold",
+                      color: "#52c41a",
+                      backgroundColor: "#f6ffed",
+                    }}
+                    controls={false}
+                  />
+                </Popover>
+              </Flex>
+            </Flex>
+            {/*Componente DateTable*/}
             <DataTable
               tHeader={listadoFacturas.t_header}
               tBody={listadoFacturas.t_body}
               loading={loading}
-              pagination={{ pageSize: 5, showSizeChanger: true }}
-              rowSelection={rowSelection}
+              pagination={{ pageSize: 15, showSizeChanger: false }}
+              rowSelection={
+                rowSelectorActivo ? rowSelection : rowSelectorActivo
+              }
             />
           </>
         ) : (
