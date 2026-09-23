@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Typography,
-  message,
-  Divider,
-  Flex,
-} from "antd";
+import { Form, Input, Button, Card, Typography, message } from "antd";
 import { MailOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -16,9 +7,9 @@ import {
   loginCardStyle,
   logoStyle,
   logoStyleImg,
-  titleStyle,
   subtitleStyle,
-  forgotPasswordStyle,
+  titleTextsInputs,
+  returnLogin,
 } from "../configs/Estilos";
 
 const { Title, Text } = Typography;
@@ -88,17 +79,7 @@ const RestablecerPass = () => {
         >
           {/* Correo */}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Correo Electrónico
-              </span>
-            }
+            label={<span style={titleTextsInputs}>Correo Electrónico</span>}
             name="email"
             rules={[
               { required: true, message: "Por favor ingresa tu correo" },
@@ -114,17 +95,7 @@ const RestablecerPass = () => {
 
           {/* Contraseña Actual*/}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Contraseña Actual
-              </span>
-            }
+            label={<span style={titleTextsInputs}>Contraseña Actual</span>}
             name="password"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
@@ -140,17 +111,7 @@ const RestablecerPass = () => {
 
           {/* Contraseña Nueva*/}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Contraseña Nueva
-              </span>
-            }
+            label={<span style={titleTextsInputs}>Contraseña Nueva</span>}
             name="newPassword"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
@@ -167,15 +128,7 @@ const RestablecerPass = () => {
           {/* Confirmar Contraseña Nueva*/}
           <Form.Item
             label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Confirmar Nueva Contraseña
-              </span>
+              <span style={titleTextsInputs}>Confirmar Nueva Contraseña</span>
             }
             name="confirmNewPassword"
             rules={[
@@ -195,6 +148,15 @@ const RestablecerPass = () => {
             <Button type="primary" htmlType="submit" loading={loading} block>
               Cambiar Contraseña
             </Button>
+          </Form.Item>
+
+          {/* Restablecer Contraseña */}
+          <Form.Item style={{ marginBottom: 12 }}>
+            <Link to="/login">
+              <Button type="link" style={returnLogin}>
+                Regresar a Login
+              </Button>
+            </Link>
           </Form.Item>
         </Form>
       </Card>

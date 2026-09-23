@@ -30,7 +30,6 @@ export const FrmContainerStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  //background: "linear-gradient(135deg, #001529 0%, #003a70 100%)",
   padding: "20px",
 };
 export const FrmCardStyle = {
@@ -47,15 +46,28 @@ export const CardStyle = {
 
 export const loginCardStyle = {
   width: "100%",
-  maxWidth: 420,
+  maxWidth: 520,
   boxShadow: "0 8px 24px rgba(0, 0, 0, 0.25)",
   borderRadius: 12,
+  padding: 40,
+};
+
+export const titleTextsInputs = {
+  color: "#000",
+  fontWeight: "bold",
+  letterSpacing: "0.5px",
+  fontSize: "14px",
 };
 
 export const logoStyle = {
   textAlign: "center",
   marginBottom: 8,
-  color: "#001529",
+  color: "#000000",
+};
+export const textTitleLogin = {
+  textAlign: "center",
+  color: "#000000",
+  marginTop: "10px",
 };
 
 export const titleStyle = {
@@ -65,9 +77,15 @@ export const titleStyle = {
 
 export const subtitleStyle = {
   textAlign: "center",
-  color: "#616161",
-  marginBottom: 24,
+  color: "#000000",
+  fontSize: "15px",
   display: "block",
+};
+
+export const returnLogin = {
+  float: "right",
+  padding: 0,
+  height: "auto",
 };
 
 export const forgotPasswordStyle = {

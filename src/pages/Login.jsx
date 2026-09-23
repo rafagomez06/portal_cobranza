@@ -12,6 +12,8 @@ import {
   loginCardStyle,
   logoStyle,
   logoStyleImg,
+  titleTextsInputs,
+  textTitleLogin,
   subtitleStyle,
   forgotPasswordStyle,
 } from "../configs/Estilos";
@@ -72,11 +74,14 @@ const Login = () => {
             alt="Logo Primos and Cousins"
           />
         </div>
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 12 }}>
           <Title level={3} style={logoStyle}>
             Sistema Integral de Cobranza
           </Title>
           <Text style={subtitleStyle}>Primos & Cousins</Text>
+          <Title level={4} style={textTitleLogin}>
+            Inicio de Sesión
+          </Title>
         </div>
 
         {/* Formulario */}
@@ -93,17 +98,7 @@ const Login = () => {
         >
           {/* Codigo de Cliente */}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Codigo de Cliente:
-              </span>
-            }
+            label={<span style={titleTextsInputs}>Codigo de Cliente:</span>}
             name="cliente"
             rules={[
               {
@@ -117,7 +112,9 @@ const Login = () => {
             ]}
           >
             <Input
-              prefix={<UserOutlined style={{ color: "#bfbfbf" }} />}
+              prefix={
+                <UserOutlined style={{ width: "100%", color: "#bfbfbf" }} />
+              }
               placeholder="ABC123"
               autoComplete="cod-cliente"
             />
@@ -125,17 +122,7 @@ const Login = () => {
 
           {/* Correo */}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Correo Electrónico:
-              </span>
-            }
+            label={<span style={titleTextsInputs}>Correo Electrónico:</span>}
             name="email"
             rules={[
               { required: true, message: "Por favor ingresa tu correo" },
@@ -151,17 +138,7 @@ const Login = () => {
 
           {/* Contraseña */}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Contraseña:
-              </span>
-            }
+            label={<span style={titleTextsInputs}>Contraseña:</span>}
             name="password"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
