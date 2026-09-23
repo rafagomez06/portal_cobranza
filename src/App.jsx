@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import RestablecerPass from "./pages/RestablecerPass";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   //Creamos cliente
@@ -28,19 +29,26 @@ const App = () => {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Ruta publica no requiere login */}
+            {/* Rutas públicas no requieren login */}
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<RestablecerPass />} />
 
-            {/* Rutas protegidas requiere login */}
-            <Route path="/" element={<AppLayout />}>
+            {/* Rutas protegidas requieren login */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Inicio />} />
               <Route path="perfil" element={<Perfil />} />
               <Route path="configuracion" element={<Configuracion />} />
               <Route path="pagos" element={<Pagos />} />
             </Route>
 
-            {/*Cualquier ruta no registrada redirige a login*/}
+            {/* Cualquier ruta no registrada redirige a login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>

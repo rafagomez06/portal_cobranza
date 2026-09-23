@@ -1,5 +1,13 @@
+import axios from "axios";
+import {
+  buildResponse,
+  normalizeError,
+  STATUS_MESSAGES,
+} from "../utils/ApiResponse";
+
 // API DE BACKEND
-const API_BASE_URL = "http://192.168.51.13:5000/api/v1/sic";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ?? "http://192.168.51.13:5000/api/v1/sic";
 
 // Cabeceras de autenticación
 export const getAuthHeaders = () => {
@@ -7,88 +15,66 @@ export const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Manejo centralizado de errores
-const handleResponse = async (res) => {
-  if (res.status === 401) {
-    // Limpiar sesión y redirigir al login
-    localStorage.removeItem("token");
-    window.location.href = "/login";
-    throw new Error("Sesión expirada");
-  }
+// Instancia base
+export const ApiConexion = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000, //evitar dejar carga infinita
+  headers: { "Content-Type": "application/json" },
+});
 
-  if (!res.ok) {
-    let errorData = null;
-    try {
-      errorData = await res.json();
-    } catch {
-      // Si no es JSON, ignorar
+// REQUEST: adjunta el token automáticamente
+ApiConexion.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// RESPONSE
+ApiConexion.interceptors.response.use(
+  // 2xx: resolvemos directamente con el contenido de "body"
+  (response) => {
+    const body = response.data?.body;
+    if (body?.status_code) return body;
+
+    if (response.status === 204) {
+      return buildResponse({
+        status_code: 204,
+        status_message: STATUS_MESSAGES.SUCCESS,
+        message: "",
+      });
     }
-    const message = errorData?.message || `Error HTTP ${res.status}`;
-    throw new Error(message);
-  }
 
-  // Si es 204 No Content, no intentes parsear
-  if (res.status === 204) return null;
+    return Promise.reject(
+      buildResponse({
+        status_code: response.status,
+        status_message: STATUS_MESSAGES.SERVER_ERROR,
+        message: "Respuesta del servidor con formato inválido.",
+      }),
+    );
+  },
 
-  return res.json();
-};
+  // Errores: siempre rechazamos con el formato estándar
+  (error) => {
+    const normalized = normalizeError(error);
 
-// Fetch genérico
-async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-      ...options.headers,
-    },
+    // Sesión expirada. Se excluye el login: ahí un 401 significa
+    // "credenciales incorrectas", no "sesión expirada"
+    const isLoginRequest = error?.config?.url?.includes("/auth/login");
+    if (normalized.status_code === 401 && !isLoginRequest) {
+      localStorage.removeItem("token");
+      window.dispatchEvent(new Event("auth:expired"));
+    }
+
+    return Promise.reject(normalized);
+  },
+);
+
+// Subida de archivos (FormData)
+export const postForm = (path, formData, config = {}) =>
+  ApiConexion.post(path, formData, {
+    ...config,
+    // Axios agrega el boundary correcto de multipart/form-data por su cuenta
+    headers: { "Content-Type": "multipart/form-data", ...config.headers },
   });
 
-  return handleResponse(res);
-}
-
-// Métodos HTTP helpers
-export const ApiConexion = {
-  get: (path, options = {}) => apiFetch(path, { ...options, method: "GET" }),
-
-  post: (path, body, options = {}) =>
-    apiFetch(path, {
-      ...options,
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-
-  put: (path, body, options = {}) =>
-    apiFetch(path, {
-      ...options,
-      method: "PUT",
-      body: JSON.stringify(body),
-    }),
-
-  patch: (path, body, options = {}) =>
-    apiFetch(path, {
-      ...options,
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
-
-  delete: (path, options = {}) =>
-    apiFetch(path, { ...options, method: "DELETE" }),
-
-  // FormData (archivos)
-  postForm: (path, formData, options = {}) =>
-    apiFetch(path, {
-      ...options,
-      method: "POST",
-      body: formData,
-      //  No forzamos Content-Type para que el navegador
-      // agregue el boundary correcto de multipart/form-data
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers,
-      },
-    }),
-};
-
-// Exportar la URL base por si se necesita
 export { API_BASE_URL };

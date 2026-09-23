@@ -18,6 +18,12 @@ cd mi-proyecto-antd
 npm install
 ```
 
+# Instalar AXIOS para peticiones API
+
+```bash
+npm install axios
+```
+
 # Instalar Tanstack Query
 
 ```bash

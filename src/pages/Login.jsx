@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Typography,
-  message,
-  Divider,
-  Flex,
-} from "antd";
+import { Form, Input, Button, Card, Typography, message, Flex } from "antd";
 import {
   MailOutlined,
   LockOutlined,
@@ -21,10 +12,10 @@ import {
   loginCardStyle,
   logoStyle,
   logoStyleImg,
-  titleStyle,
   subtitleStyle,
   forgotPasswordStyle,
 } from "../configs/Estilos";
+import { useLogin } from "../hooks/useLogin";
 
 const { Title, Text } = Typography;
 
@@ -32,32 +23,41 @@ const Login = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { IniciarSesion } = useLogin();
 
-  const onFinish = async (values) => {
+  const onLogin = async (values) => {
     setLoading(true);
-    try {
-      // Aqui va el llamado al service para el backend
-      // const response = await api.post("/auth/login", values);
-      console.log("Datos enviados:", values);
 
-      // Simulación de petición
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    const result = await IniciarSesion({
+      cod_cliente: values.cliente,
+      correo: values.email,
+      password: values.password,
+    });
 
-      // Ejemplo: guardar token
-      // localStorage.setItem("token", response.data.token);
+    setLoading(false);
 
-      message.success("¡Bienvenido al sistema!");
-      navigate("/"); // Redirige al dashboard
-    } catch (error) {
-      message.error(
-        error?.response?.data?.message || "Credenciales incorrectas",
-      );
-    } finally {
-      setLoading(false);
+    if (result.success) {
+      message.success(result.message);
+      navigate("/");
+      return;
+    }
+
+    switch (result.status_message) {
+      case "canceled":
+        return; // no mostramos nada
+      case "network_error":
+      case "timeout":
+        message.error(result.message);
+        break;
+      case "login_failed":
+        message.error(result.message);
+        break;
+      default:
+        message.error(result.message);
     }
   };
 
-  const onFinishFailed = () => {
+  const onLoginFailed = () => {
     message.warning("Por favor revisa los campos del formulario");
   };
 
@@ -86,8 +86,8 @@ const Login = () => {
           layout="vertical"
           size="large"
           initialValues={{ remember: true }}
-          onFinish={onFinish}
-          onFinishFailed={onFinishFailed}
+          onFinish={onLogin}
+          onFinishFailed={onLoginFailed}
           autoComplete="off"
           requiredMark={false}
         >

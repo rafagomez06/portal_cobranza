@@ -34,8 +34,10 @@ const AppLayout = () => {
   const selectedKey = RUTA_CLAVE[location.pathname] || "1";
 
   const handleLogout = () => {
-    // Aquí puedes limpiar tokens, sesión, etc.
+    // Elimina storage
     localStorage.removeItem("token");
+    localStorage.removeItem("cliente");
+
     console.log("Sesión cerrada");
     navigate("/login"); // Redirige a tu pantalla de login
   };

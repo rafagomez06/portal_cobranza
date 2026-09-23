@@ -6,26 +6,23 @@ export const QUERY_KEYS = {
   listadoFacturas: (parametro) => ["listado-facturas", parametro],
 };
 
+const LISTADO_VACIO = { t_header: [], t_body: [] };
+
 export function useListadoFacturas(parametro, options = {}) {
   const {
-    data: listadoFacturas = { t_header: [], t_body: [] },
+    data: listadoFacturas = LISTADO_VACIO,
     isLoading,
     isError,
     error,
     refetch,
   } = useQuery({
     queryKey: QUERY_KEYS.listadoFacturas(parametro),
-    queryFn: () => fetchListadoFacturas(parametro),
-    enabled: Boolean(parametro) && (options.enabled ?? true),
-    staleTime: 1000 * 60 * 1, // 30 min
+    queryFn: ({ signal }) => fetchListadoFacturas(parametro, { signal }),
+    select: (response) => response.data,
+    staleTime: 1000 * 60 * 5, // 5 min
     ...options,
+    enabled: Boolean(parametro) && (options.enabled ?? true),
   });
 
-  return {
-    listadoFacturas,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  };
+  return { listadoFacturas, isLoading, isError, error, refetch };
 }

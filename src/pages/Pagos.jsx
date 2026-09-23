@@ -52,13 +52,15 @@ const Pagos = () => {
   const {
     listadoFacturas,
     isLoading: isLoadingFacturas,
-    fetchListadoFacturas,
-    resetListado,
+    isError: isErrorFacturas,
+    error: errorFacturas,
+    refetch: refetchFacturas,
   } = useListadoFacturas(parametro);
 
   //Reinicia la pantalla
   const handleReset = () => {
     form.resetFields();
+    setParametro(null);
     setValueSelect(0);
     setAbonos({});
     setSelectedRowKeys([]);
@@ -72,6 +74,20 @@ const Pagos = () => {
     const monto = Number(montoCapturado) || 0;
     setRowSelectorActivo(monto > 0);
   }, [montoCapturado]);
+
+  // Error al cargar el catálogo
+  useEffect(() => {
+    if (isError && error?.status_message !== "canceled") {
+      messageApi.error({ content: error.message, key: "err-catalogos" });
+    }
+  }, [isError, error, messageApi]);
+
+  // Error al cargar facturas
+  useEffect(() => {
+    if (isErrorFacturas && errorFacturas?.status_message !== "canceled") {
+      messageApi.error({ content: errorFacturas.message, key: "err-facturas" });
+    }
+  }, [isErrorFacturas, errorFacturas, messageApi]);
   //########################################################33
 
   //LLena valores combo tipos factura
@@ -89,18 +105,13 @@ const Pagos = () => {
   }, [listadoFacturas.t_body]);
 
   //  Buscar facturas al hacer click
-  const handleBuscarFacturas = async () => {
-    try {
-      const parametro = "DI456"; // DUMMY QUITAR
-      setParametro(parametro);
-      messageApi.success("Facturas cargadas correctamente");
-    } catch (err) {
-      if (err?.errorFields) {
-        // Error de validación del formulario
-        messageApi.warning("Selecciona el tipo de factura*");
-      } else {
-        messageApi.error(err.message || "Error al cargar facturas");
-      }
+  const handleBuscarFacturas = () => {
+    const nuevoParametro = "DI456"; // DUMMY QUITAR obtener de localstorage
+
+    if (nuevoParametro === parametro) {
+      refetchFacturas();
+    } else {
+      setParametro(nuevoParametro);
     }
   };
 
@@ -483,7 +494,7 @@ const Pagos = () => {
             <DataTable
               tHeader={listadoFacturas.t_header}
               tBody={listadoFacturas.t_body}
-              loading={loading}
+              loading={isLoadingFacturas}
               pagination={{ pageSize: 15, showSizeChanger: false }}
               rowSelection={
                 rowSelectorActivo ? rowSelection : rowSelectorActivo
