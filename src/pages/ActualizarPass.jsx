@@ -1,12 +1,7 @@
 import React, { useState } from "react";
 import { Form, Input, Button, Card, Typography, message, Flex } from "antd";
-import {
-  MailOutlined,
-  LockOutlined,
-  LoginOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
-import { useNavigate, Link } from "react-router-dom";
+import { LockOutlined } from "@ant-design/icons";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   loginContainerStyle,
   loginCardStyle,
@@ -15,36 +10,38 @@ import {
   titleTextsInputs,
   textTitleLogin,
   subtitleStyle,
-  forgotPasswordStyle,
 } from "../configs/Estilos";
-import { useLogin } from "../hooks/useLogin";
-import { useAuth } from "../context/AuthContext";
+import { useResetPassword } from "../hooks/useResetPassword";
 
 const { Title, Text } = Typography;
 
-const Login = () => {
+const ActualizarPass = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { IniciarSesion } = useLogin();
-  const { login } = useAuth();
+  const { ActualizarPassword } = useResetPassword();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token"); // obtenemos token de url.
 
-  const onLogin = async (values) => {
+  const onActualizarPass = async (values) => {
     setLoading(true);
+    // valida que tenga token
+    if (!token) {
+      message.warning(
+        "No es posible cambiar la contraseña, el token no es válido.",
+      );
+      setLoading(false);
+      return;
+    }
 
-    const result = await IniciarSesion({
-      cod_cliente: values.cod_cliente,
-      correo: values.correo,
-      password: values.password,
+    const result = await ActualizarPassword({
+      token: token,
+      nueva_password: values.nueva_password,
     });
 
     setLoading(false);
 
     if (result.success) {
-      console.log("RESULT ", result);
-      const clienteData = result.data;
-      login(clienteData);
-
       message.success(result.message);
       navigate("/");
       return;
@@ -65,7 +62,7 @@ const Login = () => {
     }
   };
 
-  const onLoginFailed = () => {
+  const onActualizarPassFailed = () => {
     message.warning("Por favor revisa los campos del formulario");
   };
 
@@ -86,7 +83,7 @@ const Login = () => {
           </Title>
           <Text style={subtitleStyle}>Primos & Cousins</Text>
           <Title level={4} style={textTitleLogin}>
-            Inicio de Sesión
+            Actualizar Contraseña
           </Title>
         </div>
 
@@ -97,55 +94,15 @@ const Login = () => {
           layout="vertical"
           size="large"
           initialValues={{ remember: true }}
-          onFinish={onLogin}
-          onFinishFailed={onLoginFailed}
+          onFinish={onActualizarPass}
+          onFinishFailed={onActualizarPassFailed}
           autoComplete="off"
           requiredMark={false}
         >
-          {/* Codigo de Cliente */}
+          {/* Nueva Contraseña */}
           <Form.Item
-            label={<span style={titleTextsInputs}>Codigo de Cliente:</span>}
-            name="cod_cliente"
-            rules={[
-              {
-                required: true,
-                message: "Por favor ingresa tu codigo de cliente",
-              },
-              {
-                type: "string",
-                message: "Ingresa un codigo de cliente válido",
-              },
-            ]}
-          >
-            <Input
-              prefix={
-                <UserOutlined style={{ width: "100%", color: "#bfbfbf" }} />
-              }
-              placeholder="ABC123"
-              autoComplete="cod-cliente"
-            />
-          </Form.Item>
-
-          {/* Correo */}
-          <Form.Item
-            label={<span style={titleTextsInputs}>Correo Electrónico:</span>}
-            name="correo"
-            rules={[
-              { required: true, message: "Por favor ingresa tu correo" },
-              { type: "email", message: "Ingresa un correo válido" },
-            ]}
-          >
-            <Input
-              prefix={<MailOutlined style={{ color: "#bfbfbf" }} />}
-              placeholder="correo@ejemplo.com"
-              autoComplete="email"
-            />
-          </Form.Item>
-
-          {/* Contraseña */}
-          <Form.Item
-            label={<span style={titleTextsInputs}>Contraseña:</span>}
-            name="password"
+            label={<span style={titleTextsInputs}>Nueva Contraseña:</span>}
+            name="nueva_password"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
               { min: 6, message: "Debe tener al menos 6 caracteres" },
@@ -157,8 +114,37 @@ const Login = () => {
               autoComplete="current-password"
             />
           </Form.Item>
+          {/* Confirma Contraseña */}
+          <Form.Item
+            label={<span style={titleTextsInputs}>Confirma Contraseña:</span>}
+            name="confirma_password"
+            dependencies={["nueva_password"]}
+            rules={[
+              { required: true, message: "Por favor ingresa tu contraseña" },
+              { min: 6, message: "Debe tener al menos 6 caracteres" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("nueva_password") === value) {
+                    return Promise.resolve();
+                  }
+                  // Si no coincide, muestra el mensaje de error de abajo
+                  return Promise.reject(
+                    new Error(
+                      "Las contraseñas no coinciden, valida los datos.",
+                    ),
+                  );
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined style={{ color: "#bfbfbf" }} />}
+              placeholder="********"
+              autoComplete="current-password"
+            />
+          </Form.Item>
 
-          {/* Botón de inicio de sesión */}
+          {/* Botón de Actualizar Contraseña */}
           <Form.Item style={{ marginBottom: 8 }}>
             <Button type="primary" htmlType="submit" loading={loading} block>
               <span
@@ -168,18 +154,9 @@ const Login = () => {
                   fontSize: "18px",
                 }}
               >
-                Iniciar Sesión
+                Actualizar Contraseña
               </span>
             </Button>
-          </Form.Item>
-
-          {/* Restablecer Contraseña */}
-          <Form.Item style={{ marginBottom: 12 }}>
-            <Link to="/solicitar-reiniciar-password">
-              <Button type="link" style={forgotPasswordStyle}>
-                ¿Olvidaste tu contraseña?
-              </Button>
-            </Link>
           </Form.Item>
         </Form>
       </Card>
@@ -187,4 +164,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ActualizarPass;

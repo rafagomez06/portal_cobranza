@@ -5,10 +5,11 @@ import Perfil from "./pages/Perfil";
 import Pagos from "./pages/Pagos";
 import Configuracion from "./pages/Configuracion";
 import Login from "./pages/Login";
-import RestablecerPass from "./pages/RestablecerPass";
+import SolicitarReiniciarPass from "./pages/SolicitarReiniciarPass";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ActualizarPass from "./pages/ActualizarPass";
 
 const App = () => {
   //Creamos cliente
@@ -31,7 +32,11 @@ const App = () => {
           <Routes>
             {/* Rutas públicas no requieren login */}
             <Route path="/login" element={<Login />} />
-            <Route path="/reset-password" element={<RestablecerPass />} />
+            <Route path="/actualizar-password" element={<ActualizarPass />} />
+            <Route
+              path="/solicitar-reiniciar-password"
+              element={<SolicitarReiniciarPass />}
+            />
 
             {/* Rutas protegidas requieren login */}
             <Route
