@@ -41,7 +41,6 @@ const Login = () => {
     setLoading(false);
 
     if (result.success) {
-      console.log("RESULT ", result);
       const clienteData = result.data;
       login(clienteData);
 

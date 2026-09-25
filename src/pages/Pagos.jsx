@@ -27,7 +27,6 @@ import DataTable from "../components/DateTable";
 import { NumeroALetras } from "../utils/NumeroALetras";
 import { CardStyle } from "../configs/Estilos";
 import { useCatalogos } from "../hooks/useCatalogos";
-
 import { useListadoFacturas } from "../hooks/useListadoFacturas";
 import { useAuth } from "../context/AuthContext";
 const { Title, Text } = Typography;
@@ -35,6 +34,7 @@ const { Title, Text } = Typography;
 const Pagos = () => {
   const [form] = Form.useForm();
   const [parametro, setParametro] = useState(null);
+  const [parametroCatalogo, setParametroCatalogo] = useState(null);
   const [valueSelect, setValueSelect] = useState(0);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
@@ -43,17 +43,16 @@ const Pagos = () => {
   const [totalImporteRow, setTotalImporteRow] = useState(0);
   const [rowSelectorActivo, setRowSelectorActivo] = useState(false);
   const [esSelectFactActivo, setEsSelectFactActivo] = useState(true);
-  const [codClienteStorage, setCodClienteStorage] = useState(null);
 
   //################ HOOKS  ################
-
   const { user } = useAuth();
+
   const {
     tiposFacturas,
     isLoading: isLoadingCatalogos,
     isError,
     error,
-  } = useCatalogos();
+  } = useCatalogos(parametroCatalogo);
 
   const {
     listadoFacturas,
@@ -62,7 +61,9 @@ const Pagos = () => {
     error: errorFacturas,
     refetch: refetchFacturas,
   } = useListadoFacturas(parametro);
+
   //################################################################
+
   //#################### useEffects ###############################
   const montoCapturado = Form.useWatch("monto", form);
   useEffect(() => {
@@ -84,12 +85,18 @@ const Pagos = () => {
     }
   }, [isErrorFacturas, errorFacturas, messageApi]);
 
+  // Busca Catalogo Tipo Factura x tipo moneda cliente
+  useEffect(() => {
+    setParametroCatalogo(user?.moneda_cliente ?? null);
+  }, [user?.moneda_cliente]);
+
   //########################################################33
 
   //Reinicia la pantalla
   const handleReset = () => {
     form.resetFields();
     setParametro(null);
+    setParametroCatalogo(null);
     setValueSelect(0);
     setAbonos({});
     setSelectedRowKeys([]);

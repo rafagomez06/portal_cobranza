@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Layout, Menu, Button, Avatar, Space, Typography, Divider } from "antd";
 import {
   MenuFoldOutlined,

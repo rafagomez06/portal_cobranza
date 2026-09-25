@@ -6,5 +6,14 @@ export const mapTipoFactura = (item) => ({
 });
 
 // Obtiene catálogo de tipos de facturas
-export const fetchCatalogos = (config = {}) =>
-  ApiConexion.get("/catalogo/tipos-facturas", config);
+export const fetchCatalogos = (clv_tipo, config = {}) =>
+  ApiConexion.get("/catalogo/tipos-facturas", {
+    params: { clv_tipo },
+    ...config,
+  });
+
+export const fetchListadoFacturas = (cod_cliente, config = {}) =>
+  ApiConexion.get("/pago/listado-facturas", {
+    params: { cod_cliente },
+    ...config,
+  });

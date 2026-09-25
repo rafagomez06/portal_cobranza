@@ -31,8 +31,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (clienteData) => {
-    const { cod_cliente, correo_cliente, id_cliente, nom_cliente, token } =
-      clienteData;
+    const {
+      cod_cliente,
+      correo_cliente,
+      id_cliente,
+      nom_cliente,
+      token,
+      moneda_cliente,
+    } = clienteData;
 
     localStorage.setItem(
       "cliente",
@@ -41,12 +47,19 @@ export function AuthProvider({ children }) {
         correo_cliente,
         nom_cliente,
         id_cliente,
+        moneda_cliente,
       }),
     );
     localStorage.setItem("login_activo", "1");
     localStorage.setItem("token", token);
 
-    setUser({ cod_cliente, token, correo_cliente, nom_cliente });
+    setUser({
+      cod_cliente,
+      token,
+      correo_cliente,
+      nom_cliente,
+      moneda_cliente,
+    });
   };
 
   const logout = () => {

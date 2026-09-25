@@ -3,7 +3,6 @@ import AppLayout from "./components/Layout";
 import Inicio from "./pages/Inicio";
 import Perfil from "./pages/Perfil";
 import Pagos from "./pages/Pagos";
-import Configuracion from "./pages/Configuracion";
 import Login from "./pages/Login";
 import SolicitarReiniciarPass from "./pages/SolicitarReiniciarPass";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -49,7 +48,10 @@ const App = () => {
             >
               <Route index element={<Inicio />} />
               <Route path="perfil" element={<Perfil />} />
-              <Route path="configuracion" element={<Configuracion />} />
+              <Route
+                path="configuracion"
+                element={<SolicitarReiniciarPass />}
+              />
               <Route path="pagos" element={<Pagos />} />
             </Route>
 

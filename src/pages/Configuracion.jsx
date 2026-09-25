@@ -33,7 +33,6 @@ const Configuracion = () => {
 
   // Obtencion de correo de cliente de storage
   useEffect(() => {
-    console.log("user ", user);
     if (user) {
       try {
         if (user.correo_cliente) {
@@ -48,8 +47,6 @@ const Configuracion = () => {
 
   const onResetPass = async (values) => {
     setLoading(true);
-
-    console.log("LLEGA AQUI", values);
     const result = await ReiniciarPassword({
       cod_cliente: user.cod_cliente,
       correo_cliente: values.correo,
@@ -62,7 +59,6 @@ const Configuracion = () => {
     if (result.success) {
       message.success(result.message);
       localStorage.clear();
-      console.log("Sesión cerrada por cambio de pass.");
       navigate("/");
       return;
     }

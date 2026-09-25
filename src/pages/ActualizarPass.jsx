@@ -25,7 +25,7 @@ const ActualizarPass = () => {
 
   const onActualizarPass = async (values) => {
     setLoading(true);
-    // valida que tenga token
+    // valida que tenga token de url
     if (!token) {
       message.warning(
         "No es posible cambiar la contraseña, el token no es válido.",

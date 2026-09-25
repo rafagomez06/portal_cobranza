@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Form, Input, Button, Card, Typography, message } from "antd";
-import { MailOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
-import { useNavigate, Link } from "react-router-dom";
+import { MailOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import {
   loginContainerStyle,
   loginCardStyle,
@@ -17,7 +17,7 @@ const { Title, Text } = Typography;
 const SolicitarReiniciarPass = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
   const { SolicitudReiniciarPassword } = useResetPassword();
 
   const onEnviarCorreo = async (values) => {
@@ -28,12 +28,10 @@ const SolicitarReiniciarPass = () => {
     });
 
     setLoading(false);
-
+    localStorage.clear();
     if (result.success) {
-      const clienteData = result.data;
-
       message.success(result.message);
-      //navigate("/");
+      navigate("/login");
       return;
     }
 
@@ -54,6 +52,11 @@ const SolicitarReiniciarPass = () => {
 
   const onEnviarCorreoFailed = () => {
     message.warning("Por favor revisa los campos del formulario");
+  };
+
+  const regresar = () => {
+    localStorage.clear();
+    navigate("/login");
   };
 
   return (
@@ -113,11 +116,9 @@ const SolicitarReiniciarPass = () => {
 
           {/* Restablecer Contraseña */}
           <Form.Item style={{ marginBottom: 12 }}>
-            <Link to="/login">
-              <Button type="link" style={returnLogin}>
-                Volver al inicio de sesión
-              </Button>
-            </Link>
+            <Button onClick={regresar} type="link" style={returnLogin}>
+              Volver al inicio de sesión
+            </Button>
           </Form.Item>
         </Form>
       </Card>
