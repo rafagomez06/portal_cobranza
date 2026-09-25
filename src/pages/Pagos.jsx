@@ -27,7 +27,9 @@ import DataTable from "../components/DateTable";
 import { NumeroALetras } from "../utils/NumeroALetras";
 import { CardStyle } from "../configs/Estilos";
 import { useCatalogos } from "../hooks/useCatalogos";
+
 import { useListadoFacturas } from "../hooks/useListadoFacturas";
+import { useAuth } from "../context/AuthContext";
 const { Title, Text } = Typography;
 
 const Pagos = () => {
@@ -41,7 +43,11 @@ const Pagos = () => {
   const [totalImporteRow, setTotalImporteRow] = useState(0);
   const [rowSelectorActivo, setRowSelectorActivo] = useState(false);
   const [esSelectFactActivo, setEsSelectFactActivo] = useState(true);
+  const [codClienteStorage, setCodClienteStorage] = useState(null);
 
+  //################ HOOKS  ################
+
+  const { user } = useAuth();
   const {
     tiposFacturas,
     isLoading: isLoadingCatalogos,
@@ -56,19 +62,8 @@ const Pagos = () => {
     error: errorFacturas,
     refetch: refetchFacturas,
   } = useListadoFacturas(parametro);
-
-  //Reinicia la pantalla
-  const handleReset = () => {
-    form.resetFields();
-    setParametro(null);
-    setValueSelect(0);
-    setAbonos({});
-    setSelectedRowKeys([]);
-    setTotalImporteRow(0);
-    setEsSelectFactActivo(true);
-    messageApi.info("Formulario limpiado");
-  };
-
+  //################################################################
+  //#################### useEffects ###############################
   const montoCapturado = Form.useWatch("monto", form);
   useEffect(() => {
     const monto = Number(montoCapturado) || 0;
@@ -88,7 +83,20 @@ const Pagos = () => {
       messageApi.error({ content: errorFacturas.message, key: "err-facturas" });
     }
   }, [isErrorFacturas, errorFacturas, messageApi]);
+
   //########################################################33
+
+  //Reinicia la pantalla
+  const handleReset = () => {
+    form.resetFields();
+    setParametro(null);
+    setValueSelect(0);
+    setAbonos({});
+    setSelectedRowKeys([]);
+    setTotalImporteRow(0);
+    setEsSelectFactActivo(true);
+    messageApi.info("Formulario limpiado");
+  };
 
   //LLena valores combo tipos factura
   const options = tiposFacturas.map((tipo) => ({
@@ -106,8 +114,7 @@ const Pagos = () => {
 
   //  Buscar facturas al hacer click
   const handleBuscarFacturas = () => {
-    const nuevoParametro = "DI456"; // DUMMY QUITAR obtener de localstorage
-
+    const nuevoParametro = user.cod_cliente;
     if (nuevoParametro === parametro) {
       refetchFacturas();
     } else {

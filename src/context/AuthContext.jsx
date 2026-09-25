@@ -4,40 +4,58 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [rol, setRol] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Obtencion de cliente de storage para obtener facturas
   useEffect(() => {
-    const email = localStorage.getItem("email_user");
-    const rolGuardado = localStorage.getItem("rol_user");
-    const token = localStorage.getItem("token");
+    try {
+      const clienteRaw = localStorage.getItem("cliente");
+      if (clienteRaw) {
+        const clienteData = JSON.parse(clienteRaw);
+        if (clienteData?.cod_cliente) {
+          const codCliente = clienteData?.cod_cliente;
+          const correo = clienteData?.correo_cliente;
+          const nomCliente = clienteData?.nom_cliente;
+          const token = localStorage.getItem("token");
 
-    if (email && rolGuardado && token) {
-      setUser({ email, token });
-      setRol(rolGuardado);
+          if (correo && token && codCliente) {
+            setUser({ codCliente, token, correo, nomCliente });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error leyendo cliente de storage", err);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }, []);
 
-  const login = (email, rol, token) => {
-    localStorage.setItem("email_user", email);
-    localStorage.setItem("rol_user", rol);
+  const login = (clienteData) => {
+    const { cod_cliente, correo_cliente, id_cliente, nom_cliente, token } =
+      clienteData;
+
+    localStorage.setItem(
+      "cliente",
+      JSON.stringify({
+        cod_cliente,
+        correo_cliente,
+        nom_cliente,
+        id_cliente,
+      }),
+    );
+    localStorage.setItem("login_activo", "1");
     localStorage.setItem("token", token);
-    setUser({ email, token });
-    setRol(rol);
+
+    setUser({ cod_cliente, token, correo_cliente, nom_cliente });
   };
 
   const logout = () => {
-    localStorage.removeItem("email_user");
-    localStorage.removeItem("rol_user");
-    localStorage.removeItem("token");
+    localStorage.clear();
     setUser(null);
-    setRol(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, rol, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

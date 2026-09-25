@@ -18,6 +18,7 @@ import {
   forgotPasswordStyle,
 } from "../configs/Estilos";
 import { useLogin } from "../hooks/useLogin";
+import { useAuth } from "../context/AuthContext";
 
 const { Title, Text } = Typography;
 
@@ -26,19 +27,24 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { IniciarSesion } = useLogin();
+  const { login } = useAuth();
 
   const onLogin = async (values) => {
     setLoading(true);
 
     const result = await IniciarSesion({
-      cod_cliente: values.cliente,
-      correo: values.email,
+      cod_cliente: values.cod_cliente,
+      correo: values.correo,
       password: values.password,
     });
 
     setLoading(false);
 
     if (result.success) {
+      console.log("RESULT ", result);
+      const clienteData = result.data;
+      login(clienteData);
+
       message.success(result.message);
       navigate("/");
       return;
@@ -99,7 +105,7 @@ const Login = () => {
           {/* Codigo de Cliente */}
           <Form.Item
             label={<span style={titleTextsInputs}>Codigo de Cliente:</span>}
-            name="cliente"
+            name="cod_cliente"
             rules={[
               {
                 required: true,
@@ -123,7 +129,7 @@ const Login = () => {
           {/* Correo */}
           <Form.Item
             label={<span style={titleTextsInputs}>Correo Electrónico:</span>}
-            name="email"
+            name="correo"
             rules={[
               { required: true, message: "Por favor ingresa tu correo" },
               { type: "email", message: "Ingresa un correo válido" },

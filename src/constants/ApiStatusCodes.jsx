@@ -12,3 +12,14 @@ export const STATUS_CODES = {
   CODE_409: 409,
   CODE_500: 500,
 };
+
+export const STATUS_MESSAGES = {
+  SUCCESS: "Success",
+  LOGIN_FAILED: "login_failed",
+  NETWORK_ERROR: "network_error",
+  TIMEOUT: "timeout",
+  SERVER_ERROR: "server_error",
+  CLIENT_ERROR: "client_error",
+  CANCELED: "canceled",
+  TOKEN_EXPIRED: "missing_authorization_header",
+};

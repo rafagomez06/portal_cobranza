@@ -8,6 +8,7 @@ export const STATUS_MESSAGES = {
   SERVER_ERROR: "server_error",
   CLIENT_ERROR: "client_error",
   CANCELED: "canceled",
+  TOKEN_EXPIRED: "missing_authorization_header",
 };
 
 // Misma estructura que devuelve el backend
@@ -37,8 +38,24 @@ export const normalizeError = (error) => {
   const body = error?.response?.data?.body;
   if (body?.status_code) return body;
 
-  // El backend respondió, pero SIN estructura (HTML de un 502, 404 de proxy...)
+  // El backend respondió, pero SIN estructura (HTML de un 502, 404 de proxy,401 etc.)
   if (error?.response) {
+    //Validación de token expirado
+    let httpStatusCode = error?.response?.status;
+    let msgToken = error?.response?.data?.msg;
+    let msgTokenConvert = msgToken.toLowerCase().replaceAll(" ", "_");
+    //Token expirado y 401:
+    if (
+      msgTokenConvert === STATUS_MESSAGES.TOKEN_EXPIRED &&
+      httpStatusCode == 401
+    ) {
+      return buildResponse({
+        status_code: error.response.status,
+        status_message: STATUS_MESSAGES.TOKEN_EXPIRED,
+        message:
+          "La sesión ha expirado. Por seguridad será redireccionado al Login.",
+      });
+    }
     return buildResponse({
       status_code: error.response.status,
       status_message: STATUS_MESSAGES.SERVER_ERROR,

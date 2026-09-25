@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Form,
   Input,
@@ -16,10 +16,11 @@ import {
   FrmCardStyle,
   logoStyle,
   logoStyleImg,
-  titleStyle,
   subtitleStyle,
-  forgotPasswordStyle,
+  titleTextsInputs,
 } from "../configs/Estilos";
+import { useResetPassword } from "../hooks/useResetPassword";
+import { useAuth } from "../context/AuthContext";
 
 const { Title, Text } = Typography;
 
@@ -27,35 +28,63 @@ const Configuracion = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { ReiniciarPassword } = useResetPassword();
+  const { user } = useAuth();
 
-  const onFinish = async (values) => {
+  // Obtencion de correo de cliente de storage
+  useEffect(() => {
+    console.log("user ", user);
+    if (user) {
+      try {
+        if (user.correo_cliente) {
+          // Actualiza el campo correo en el formulario
+          form.setFieldsValue({ correo: user.correo_cliente });
+        }
+      } catch (err) {
+        console.error("Error leyendo cliente de storage", err);
+      }
+    }
+  }, [form]);
+
+  const onResetPass = async (values) => {
     setLoading(true);
-    try {
-      // Aqui va el llamado al service para el backend
-      // const response = await api.post("/auth/login", values);
-      console.log("Datos enviados:", values);
 
-      // Simulación de petición
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    console.log("LLEGA AQUI", values);
+    const result = await ReiniciarPassword({
+      cod_cliente: user.cod_cliente,
+      correo_cliente: values.correo,
+      actual_password: values.actual_password,
+      nueva_password: values.nueva_password,
+    });
 
-      // Ejemplo: guardar token
-      // localStorage.setItem("token", response.data.token);
+    setLoading(false);
 
-      message.success("¡Bienvenido al sistema!");
-      navigate("/"); // Redirige al dashboard
-    } catch (error) {
-      message.error(
-        error?.response?.data?.message || "Credenciales incorrectas",
-      );
-    } finally {
-      setLoading(false);
+    if (result.success) {
+      message.success(result.message);
+      localStorage.clear();
+      console.log("Sesión cerrada por cambio de pass.");
+      navigate("/");
+      return;
+    }
+
+    switch (result.status_message) {
+      case "canceled":
+        return; // no mostramos nada
+      case "network_error":
+      case "timeout":
+        message.error(result.message);
+        break;
+      case "login_failed":
+        message.error(result.message);
+        break;
+      default:
+        message.error(result.message);
     }
   };
 
-  const onFinishFailed = () => {
+  const onResetPassFailed = () => {
     message.warning("Por favor revisa los campos del formulario");
   };
-
   return (
     <div style={FrmContainerStyle}>
       <Card style={FrmCardStyle} variant="borderless">
@@ -81,25 +110,15 @@ const Configuracion = () => {
           layout="vertical"
           size="large"
           initialValues={{ remember: true }}
-          onFinish={onFinish}
-          onFinishFailed={onFinishFailed}
+          onFinish={onResetPass}
+          onFinishFailed={onResetPassFailed}
           autoComplete="off"
           requiredMark={false}
         >
           {/* Correo */}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Correo Electrónico
-              </span>
-            }
-            name="email"
+            label={<span style={titleTextsInputs}>Correo Electrónico</span>}
+            name="correo"
             rules={[
               { required: true, message: "Por favor ingresa tu correo" },
               { type: "email", message: "Ingresa un correo válido" },
@@ -109,23 +128,15 @@ const Configuracion = () => {
               prefix={<MailOutlined style={{ color: "#bfbfbf" }} />}
               placeholder="correo@ejemplo.com"
               autoComplete="email"
+              readOnly={true}
+              disabled={true}
             />
           </Form.Item>
 
           {/* Contraseña Actual*/}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Contraseña Actual
-              </span>
-            }
-            name="password"
+            label={<span style={titleTextsInputs}>Contraseña Actual</span>}
+            name="actual_password"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
               { min: 6, message: "Debe tener al menos 6 caracteres" },
@@ -140,18 +151,8 @@ const Configuracion = () => {
 
           {/* Contraseña Nueva*/}
           <Form.Item
-            label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Contraseña Nueva
-              </span>
-            }
-            name="newPassword"
+            label={<span style={titleTextsInputs}>Contraseña Nueva</span>}
+            name="nueva_password"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
               { min: 6, message: "Debe tener al menos 6 caracteres" },
@@ -167,17 +168,9 @@ const Configuracion = () => {
           {/* Confirmar Contraseña Nueva*/}
           <Form.Item
             label={
-              <span
-                style={{
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                }}
-              >
-                Confirmar Nueva Contraseña
-              </span>
+              <span style={titleTextsInputs}>Confirmar Nueva Contraseña</span>
             }
-            name="confirmNewPassword"
+            name="confirma_nueva_password"
             rules={[
               { required: true, message: "Por favor ingresa tu contraseña" },
               { min: 6, message: "Debe tener al menos 6 caracteres" },

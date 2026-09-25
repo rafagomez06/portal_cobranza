@@ -7,7 +7,6 @@ import {
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
-  DollarCircleFilled,
   DollarCircleOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
@@ -17,6 +16,8 @@ import {
   contentStyle,
   footerStyle,
 } from "../configs/Estilos";
+import { useAuth } from "../context/AuthContext";
+
 const { Header, Content, Footer, Sider } = Layout;
 const { Text } = Typography;
 
@@ -32,12 +33,11 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedKey = RUTA_CLAVE[location.pathname] || "1";
+  const { user } = useAuth();
 
-  const handleLogout = () => {
+  const CerrarSesion = () => {
     // Elimina storage
-    localStorage.removeItem("token");
-    localStorage.removeItem("cliente");
-
+    localStorage.clear();
     console.log("Sesión cerrada");
     navigate("/login"); // Redirige a tu pantalla de login
   };
@@ -138,7 +138,7 @@ const AppLayout = () => {
               type="primary"
               danger
               icon={<LogoutOutlined />}
-              onClick={handleLogout}
+              onClick={CerrarSesion}
               block
               style={{
                 color: "#fff",
@@ -165,7 +165,9 @@ const AppLayout = () => {
           />
           <Space>
             <Avatar icon={<UserOutlined />} />
-            <Text style={{ color: "#fff" }}>Usuario</Text>
+            <Text style={{ color: "#fff" }}>
+              {user?.nom_cliente || "Usuario"}
+            </Text>
           </Space>
         </Header>
 

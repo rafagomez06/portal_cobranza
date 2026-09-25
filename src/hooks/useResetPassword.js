@@ -1,10 +1,15 @@
-import { fetchLogin } from "../services/loginService";
+import { fetchResetPass } from "../services/resetPasswordService";
 import { buildResponse, STATUS_MESSAGES } from "../utils/ApiResponse";
 
-export const useLogin = () => {
-  const IniciarSesion = async (userData) => {
+export const useResetPassword = () => {
+  const ReiniciarPassword = async (userData) => {
     try {
-      const response = await fetchLogin(userData);
+      console.log("HOOOK userData ", userData);
+
+      const response = await fetchResetPass(userData);
+
+      console.log("response ", response);
+
       return { success: true, ...response };
     } catch (error) {
       const err =
@@ -20,5 +25,5 @@ export const useLogin = () => {
     }
   };
 
-  return { IniciarSesion };
+  return { ReiniciarPassword };
 };
