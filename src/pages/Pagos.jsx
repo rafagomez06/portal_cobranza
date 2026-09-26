@@ -39,7 +39,7 @@ const Pagos = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [abonos, setAbonos] = useState({});
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [totalImporteRow, setTotalImporteRow] = useState(0);
+  // const [totalImporteRow, setTotalImporteRow] = useState(0);
   const [rowSelectorActivo, setRowSelectorActivo] = useState(false);
   const [esSelectFactActivo, setEsSelectFactActivo] = useState(true);
 
@@ -86,8 +86,6 @@ const Pagos = () => {
 
   // Busca Catalogo Tipo Factura x tipo moneda cliente
   useEffect(() => {
-    console.log("OBTIENE MONEDA", user?.moneda_cliente);
-
     setParametroCatalogo(user?.moneda_cliente ?? null);
   }, [user?.moneda_cliente]);
 
@@ -96,12 +94,9 @@ const Pagos = () => {
   //Reinicia la pantalla
   const handleReset = () => {
     form.resetFields();
-    setParametro(null);
-    setParametroCatalogo(null);
     setValueSelect(0);
     setAbonos({});
     setSelectedRowKeys([]);
-    setTotalImporteRow(0);
     setEsSelectFactActivo(true);
     messageApi.info("Formulario limpiado");
   };
@@ -124,11 +119,19 @@ const Pagos = () => {
   const dataSource = useMemo(() => {
     return (listadoFacturas.t_body ?? []).map((row, index) => {
       const key = row.idenc ?? row.factura?.trim() ?? String(index);
+
+      // esFilaSeleccionada
+      const estaSeleccionada = Object.prototype.hasOwnProperty.call(
+        abonos,
+        key,
+      );
       const abonado = abonos[key] ?? 0;
       const importeNotaCredito = Number(row.importe_nota_credito) || 0;
 
       const importeAclarar =
-        importeNotaCredito > 0 ? importeNotaCredito - abonado : 0;
+        estaSeleccionada && importeNotaCredito > 0
+          ? abonado - importeNotaCredito
+          : 0;
 
       return {
         ...row,
@@ -138,6 +141,28 @@ const Pagos = () => {
       };
     });
   }, [listadoFacturas.t_body, abonos]);
+
+  //Seleccion row de tabla, Obtiene data de row
+  const handleSelectionRowChange = (keys, rows) => {
+    setSelectedRowKeys(keys);
+
+    const nuevosAbonos = {};
+    rows.forEach((row) => {
+      nuevosAbonos[row.key] = Number(row.importe_factura) || 0;
+    });
+    setAbonos(nuevosAbonos);
+
+    // Suma local solo para la validación del warning (no se guarda en estado)
+    const totalCentavos = rows.reduce(
+      (sum, row) => sum + Math.round((Number(row.importe_factura) || 0) * 100),
+      0,
+    );
+    const totalRow = totalCentavos / 100;
+
+    if (totalRow > (Number(montoCapturado) || 0)) {
+      messageApi.warning("El total disponible excede el monto capturado");
+    }
+  };
 
   //  Buscar facturas al hacer click
   const handleBuscarFacturas = () => {
@@ -149,58 +174,21 @@ const Pagos = () => {
     }
   };
 
-  //Seleccion row de tabla, Obtiene data de row
-  // const handleSelectionRowChange = (keys, rows) => {
-  //   setSelectedRowKeys(keys);
-  //   console.log("Filas seleccionadas:", rows);
-
-  //   // Suma en centavos para evitar error de flotante
-  //   const totalCentavos = rows.reduce(
-  //     (sum, row) => sum + Math.round((Number(row.importe_factura) || 0) * 100),
-  //     0,
-  //   );
-  //   const totalRow = totalCentavos / 100;
-  //   setTotalImporteRow(totalRow);
-
-  //   // Validación
-  //   if (totalRow > (Number(montoCapturado) || 0)) {
-  //     messageApi.warning("El total disponible excede el monto capturado");
-  //   }
-  //   console.log("## Total importe seleccionado:", totalRow);
-  // };
-
-  //Cambios claude
-  const handleSelectionRowChange = (keys, rows) => {
-    setSelectedRowKeys(keys);
-
-    const nuevosAbonos = {};
-    rows.forEach((row) => {
-      nuevosAbonos[row.key] = Number(row.importe_factura) || 0;
-    });
-    setAbonos(nuevosAbonos);
-
-    const totalCentavos = rows.reduce(
-      (sum, row) => sum + Math.round((Number(row.importe_factura) || 0) * 100),
+  // Calcula y suma Total de abonado
+  const totalAbonado = useMemo(() => {
+    const totalCentavos = Object.values(abonos).reduce(
+      (sum, value) => sum + Math.round((Number(value) || 0) * 100),
       0,
     );
-    const totalRow = totalCentavos / 100;
-    setTotalImporteRow(totalRow);
+    return totalCentavos / 100;
+  }, [abonos]);
 
-    if (totalRow > (Number(montoCapturado) || 0)) {
-      messageApi.warning("El total disponible excede el monto capturado");
-    }
-  };
-  // Detecta cambio en Monto
+  //Detecta valor en total Disponible
   const totalDisponible = useMemo(() => {
     const montoInicial = Number(montoCapturado) || 0;
-    const totalAbonado = Object.values(abonos).reduce(
-      (sum, value) => sum + (Number(value) || 0),
-      0,
-    );
-    const auxtotal = montoInicial - totalAbonado - totalImporteRow;
-
-    return Math.round(auxtotal * 100) / 100; // número, no string
-  }, [montoCapturado, abonos, totalImporteRow]);
+    const auxtotal = montoInicial - totalAbonado;
+    return Math.round(auxtotal * 100) / 100;
+  }, [montoCapturado, totalAbonado]);
 
   //Detecta seleccion de rows en tabla
   const rowSelection = {
@@ -463,21 +451,21 @@ const Pagos = () => {
                   strong
                   style={{
                     fontSize: 16,
-                    backgroundColor: "#d9f7be",
+                    backgroundColor: "#bae0ff",
                     borderRadius: 10,
                     padding: 8,
                   }}
                 >
-                  Total Disponible:
+                  Total Abonado:
                 </Text>
                 <Popover
-                  content={renderPopoverContent(totalDisponible)}
+                  content={renderPopoverContent(totalAbonado)}
                   title="Cantidad en letras"
                   trigger="hover"
                   placement="left"
                 >
                   <InputNumber
-                    value={totalDisponible}
+                    value={totalAbonado}
                     readOnly
                     formatter={(v) =>
                       `$ ${Number(v).toLocaleString("es-MX", {
@@ -510,21 +498,21 @@ const Pagos = () => {
                   strong
                   style={{
                     fontSize: 16,
-                    backgroundColor: "#bae0ff",
+                    backgroundColor: "#d9f7be",
                     borderRadius: 10,
                     padding: 8,
                   }}
                 >
-                  Total Abonado:
+                  Total Disponible:
                 </Text>
                 <Popover
-                  content={renderPopoverContent(totalImporteRow)}
+                  content={renderPopoverContent(totalDisponible)}
                   title="Cantidad en letras"
                   trigger="hover"
                   placement="left"
                 >
                   <InputNumber
-                    value={totalImporteRow}
+                    value={totalDisponible}
                     readOnly
                     formatter={(v) =>
                       `$ ${Number(v).toLocaleString("es-MX", {
