@@ -25,6 +25,22 @@ export const loginContainerStyle = {
   background: "linear-gradient(135deg, #e0ebe8 0%, #eaeff1 100%)",
   padding: "20px",
 };
+
+export const ContainerStyle = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "20px",
+};
+
+export const CardStyleGenerico = {
+  width: "100%",
+  maxWidth: 520,
+  borderRadius: 12,
+  padding: 40,
+};
+
 export const FrmContainerStyle = {
   minHeight: "100vh",
   display: "flex",

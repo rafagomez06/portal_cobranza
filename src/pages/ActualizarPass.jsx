@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Form, Input, Button, Card, Typography, message, Flex } from "antd";
+import { useState } from "react";
+import { Form, Input, Button, Card, Typography, message } from "antd";
 import { LockOutlined } from "@ant-design/icons";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -27,9 +27,12 @@ const ActualizarPass = () => {
     setLoading(true);
     // valida que tenga token de url
     if (!token) {
-      message.warning(
-        "No es posible cambiar la contraseña, el token no es válido.",
-      );
+      message.open({
+        type: "warning",
+        content: "No es posible cambiar la contraseña, el token no es válido.",
+        duration: 5,
+      });
+
       setLoading(false);
       return;
     }
@@ -42,7 +45,11 @@ const ActualizarPass = () => {
     setLoading(false);
 
     if (result.success) {
-      message.success(result.message);
+      message.open({
+        type: "success",
+        content: result.message,
+        duration: 5,
+      });
       navigate("/");
       return;
     }

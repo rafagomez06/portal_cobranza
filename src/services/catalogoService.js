@@ -11,9 +11,3 @@ export const fetchCatalogos = (clv_tipo, config = {}) =>
     params: { clv_tipo },
     ...config,
   });
-
-export const fetchListadoFacturas = (cod_cliente, config = {}) =>
-  ApiConexion.get("/pago/listado-facturas", {
-    params: { cod_cliente },
-    ...config,
-  });

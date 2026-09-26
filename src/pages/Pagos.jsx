@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
-
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   Breadcrumb,
@@ -87,6 +86,8 @@ const Pagos = () => {
 
   // Busca Catalogo Tipo Factura x tipo moneda cliente
   useEffect(() => {
+    console.log("OBTIENE MONEDA", user?.moneda_cliente);
+
     setParametroCatalogo(user?.moneda_cliente ?? null);
   }, [user?.moneda_cliente]);
 
@@ -112,12 +113,31 @@ const Pagos = () => {
   }));
 
   //  Normalizar t_body agregando un "key" para Ant Design
+  // const dataSource = useMemo(() => {
+  //   return (listadoFacturas.t_body ?? []).map((row, index) => ({
+  //     ...row,
+  //     key: row.idenc ?? row.factura?.trim() ?? String(index),
+  //   }));
+  // }, [listadoFacturas.t_body]);
+
+  //Cambios claude
   const dataSource = useMemo(() => {
-    return (listadoFacturas.t_body ?? []).map((row, index) => ({
-      ...row,
-      key: row.idenc ?? row.factura?.trim() ?? String(index),
-    }));
-  }, [listadoFacturas.t_body]);
+    return (listadoFacturas.t_body ?? []).map((row, index) => {
+      const key = row.idenc ?? row.factura?.trim() ?? String(index);
+      const abonado = abonos[key] ?? 0;
+      const importeNotaCredito = Number(row.importe_nota_credito) || 0;
+
+      const importeAclarar =
+        importeNotaCredito > 0 ? importeNotaCredito - abonado : 0;
+
+      return {
+        ...row,
+        key,
+        abonado,
+        importe_aclarar: importeAclarar,
+      };
+    });
+  }, [listadoFacturas.t_body, abonos]);
 
   //  Buscar facturas al hacer click
   const handleBuscarFacturas = () => {
@@ -130,11 +150,35 @@ const Pagos = () => {
   };
 
   //Seleccion row de tabla, Obtiene data de row
+  // const handleSelectionRowChange = (keys, rows) => {
+  //   setSelectedRowKeys(keys);
+  //   console.log("Filas seleccionadas:", rows);
+
+  //   // Suma en centavos para evitar error de flotante
+  //   const totalCentavos = rows.reduce(
+  //     (sum, row) => sum + Math.round((Number(row.importe_factura) || 0) * 100),
+  //     0,
+  //   );
+  //   const totalRow = totalCentavos / 100;
+  //   setTotalImporteRow(totalRow);
+
+  //   // Validación
+  //   if (totalRow > (Number(montoCapturado) || 0)) {
+  //     messageApi.warning("El total disponible excede el monto capturado");
+  //   }
+  //   console.log("## Total importe seleccionado:", totalRow);
+  // };
+
+  //Cambios claude
   const handleSelectionRowChange = (keys, rows) => {
     setSelectedRowKeys(keys);
-    console.log("Filas seleccionadas:", rows);
 
-    // Suma en centavos para evitar error de flotante
+    const nuevosAbonos = {};
+    rows.forEach((row) => {
+      nuevosAbonos[row.key] = Number(row.importe_factura) || 0;
+    });
+    setAbonos(nuevosAbonos);
+
     const totalCentavos = rows.reduce(
       (sum, row) => sum + Math.round((Number(row.importe_factura) || 0) * 100),
       0,
@@ -142,13 +186,10 @@ const Pagos = () => {
     const totalRow = totalCentavos / 100;
     setTotalImporteRow(totalRow);
 
-    // Validación
     if (totalRow > (Number(montoCapturado) || 0)) {
       messageApi.warning("El total disponible excede el monto capturado");
     }
-    console.log("## Total importe seleccionado:", totalRow);
   };
-
   // Detecta cambio en Monto
   const totalDisponible = useMemo(() => {
     const montoInicial = Number(montoCapturado) || 0;
@@ -183,7 +224,7 @@ const Pagos = () => {
     "application/pdf",
   ];
 
-  //Tamaño max.
+  //Tamaño mbs max.
   const MAX_SIZE_MBS = 5;
 
   //Formato de archivo
@@ -507,7 +548,7 @@ const Pagos = () => {
             {/*Componente DateTable*/}
             <DataTable
               tHeader={listadoFacturas.t_header}
-              tBody={listadoFacturas.t_body}
+              tBody={dataSource}
               loading={isLoadingFacturas}
               pagination={{ pageSize: 15, showSizeChanger: false }}
               rowSelection={

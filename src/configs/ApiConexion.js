@@ -57,12 +57,23 @@ ApiConexion.interceptors.response.use(
   (error) => {
     const normalized = normalizeError(error);
     // Sesión expirada. Se excluye el login: ahí un 401 significa
-    // "credenciales incorrectas", no "sesión expirada"
     const isLoginRequest = error?.config?.url?.includes("/auth/login");
 
     if (normalized.status_code === 401 && !isLoginRequest) {
-      localStorage.clear();
-      window.dispatchEvent(new Event("auth:expired"));
+      localStorage.removeItem("token");
+      localStorage.removeItem("cliente");
+      localStorage.removeItem("login_activo");
+
+      window.dispatchEvent(
+        new CustomEvent("auth:expired", {
+          detail: {
+            reason: normalized.status_message || "unauthorized",
+            message:
+              normalized.message ||
+              "Tu sesión expiró. Vuelve a iniciar sesión.",
+          },
+        }),
+      );
     }
     return Promise.reject(normalized);
   },

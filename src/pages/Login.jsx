@@ -44,7 +44,12 @@ const Login = () => {
       const clienteData = result.data;
       login(clienteData);
 
-      message.success(result.message);
+      message.open({
+        type: "success",
+        content: result.message,
+        duration: 5,
+      });
+
       navigate("/");
       return;
     }

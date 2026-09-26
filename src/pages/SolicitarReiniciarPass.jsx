@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Form, Input, Button, Card, Typography, message } from "antd";
 import { MailOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
   loginContainerStyle,
+  ContainerStyle,
   loginCardStyle,
+  CardStyleGenerico,
   logoStyle,
   logoStyleImg,
   subtitleStyle,
@@ -19,18 +21,26 @@ const SolicitarReiniciarPass = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { SolicitudReiniciarPassword } = useResetPassword();
+  const [esLoginActivo, setEsLoginActivo] = useState(false);
+
+  useEffect(() => {
+    const loginActivo = localStorage.getItem("login_activo");
+    setEsLoginActivo(loginActivo);
+  }, []);
 
   const onEnviarCorreo = async (values) => {
     setLoading(true);
-
     const result = await SolicitudReiniciarPassword({
       correo: values.correo,
     });
-
     setLoading(false);
     localStorage.clear();
     if (result.success) {
-      message.success(result.message);
+      message.open({
+        type: "success",
+        content: result.message,
+        duration: 5,
+      });
       navigate("/login");
       return;
     }
@@ -60,8 +70,8 @@ const SolicitarReiniciarPass = () => {
   };
 
   return (
-    <div style={loginContainerStyle}>
-      <Card style={loginCardStyle} variant="borderless">
+    <div style={!esLoginActivo ? loginContainerStyle : ContainerStyle}>
+      <Card style={!esLoginActivo ? loginCardStyle : CardStyleGenerico}>
         {/* Logo / Título */}
         <div style={logoStyleImg}>
           <img
@@ -72,7 +82,9 @@ const SolicitarReiniciarPass = () => {
         </div>
         <div style={{ marginBottom: 24 }}>
           <Title level={3} style={logoStyle}>
-            ¿Olvidaste tu contraseña?
+            {!esLoginActivo
+              ? "¿Olvidaste tu contraseña?"
+              : "Reinicia tu contraseña"}
           </Title>
           <Text style={subtitleStyle}>
             Ingresa tu correo electrónico y te enviaremos las instrucciones para
