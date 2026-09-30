@@ -20,18 +20,16 @@ export function AuthProvider({ children }) {
       if (token && clienteRaw) {
         const clienteData = JSON.parse(clienteRaw);
 
-        // Validación mínima: necesitamos cod_cliente y token
-        if (clienteData?.cod_cliente) {
+        if (clienteData?.rfc_cliente) {
           setUser({
-            cod_cliente: clienteData.cod_cliente,
-            correo_cliente: clienteData.correo_cliente,
             nom_cliente: clienteData.nom_cliente,
-            id_cliente: clienteData.id_cliente,
-            moneda_cliente: clienteData.moneda_cliente, // 👈 el que faltaba
+            rfc_cliente: clienteData.rfc_cliente,
+            cod_cliente: clienteData.cod_cliente,
+
             token,
           });
         } else {
-          // Datos incompletos: limpiamos por seguridad
+          // Datos incompletos limpiamos por seguridad
           clearStorage();
         }
       }
@@ -71,34 +69,22 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (clienteData) => {
-    const {
-      cod_cliente,
-      correo_cliente,
-      id_cliente,
-      nom_cliente,
-      token,
-      moneda_cliente,
-    } = clienteData;
+    const { nom_cliente, token, rfc_cliente } = clienteData;
 
     localStorage.setItem(
       "cliente",
       JSON.stringify({
-        cod_cliente,
-        correo_cliente,
         nom_cliente,
-        id_cliente,
-        moneda_cliente,
+        rfc_cliente,
       }),
     );
     localStorage.setItem("login_activo", true);
     localStorage.setItem("token", token);
 
     setUser({
-      cod_cliente,
       token,
-      correo_cliente,
       nom_cliente,
-      moneda_cliente,
+      rfc_cliente,
     });
     setSessionMessage(null);
   };
@@ -110,6 +96,23 @@ export function AuthProvider({ children }) {
     setSessionMessage(null);
   };
 
+  //Actualiza context de user
+  const updateUser = (nuevosDatos) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      //Valida si realmente hay cambios para actualizar
+      const hayCambios = Object.entries(nuevosDatos).some(
+        ([k, v]) => prev[k] !== v,
+      );
+      if (!hayCambios) return prev;
+
+      const actualizado = { ...prev, ...nuevosDatos };
+      const { token, ...clienteSinToken } = actualizado;
+      localStorage.setItem("cliente", JSON.stringify(clienteSinToken));
+      return actualizado;
+    });
+  };
+
   const clearSessionMessage = () => setSessionMessage(null);
 
   return (
@@ -118,6 +121,7 @@ export function AuthProvider({ children }) {
         user,
         login,
         logout,
+        updateUser,
         isLoading,
         sessionMessage,
         clearSessionMessage,

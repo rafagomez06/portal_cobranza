@@ -4,12 +4,7 @@ import { Table } from "antd";
 export default function DataTable({
   tHeader = [],
   tBody = [],
-  currencyColumns = [
-    "importe_factura",
-    "importe_nota_credito",
-    "abonado",
-    "importe_aclarar",
-  ],
+  currencyColumns = [],
   currencySymbol = "$",
   locale = "es-MX",
   loading = false,
@@ -64,6 +59,7 @@ export default function DataTable({
       loading={loading}
       pagination={pagination}
       rowKey={rowKey}
+      size="small"
       rowSelection={rowSelection}
       scroll={{ x: "max-content" }}
       {...rest}

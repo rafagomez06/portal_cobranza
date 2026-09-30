@@ -22,13 +22,44 @@ import {
   SearchOutlined,
   ClearOutlined,
 } from "@ant-design/icons";
+import { RFC_VENTAS_GRALES } from "../constants/RfcGenericos";
 import DataTable from "../components/DateTable";
 import { NumeroALetras } from "../utils/NumeroALetras";
 import { CardStyle } from "../configs/Estilos";
 import { useCatalogos } from "../hooks/useCatalogos";
 import { useListadoFacturas } from "../hooks/useListadoFacturas";
 import { useAuth } from "../context/AuthContext";
+
 const { Title, Text } = Typography;
+
+//################ HELPERS ################
+
+// Convierte cualquier valor numerico/string a centavos enteros
+const aCentavos = (v) => Math.round((Number(v) || 0) * 100);
+
+// Saldo real de una factura en centavos (importe_factura - importe_abonado)
+const saldoRealCentavos = (fila) =>
+  Math.max(
+    0,
+    aCentavos(fila.importe_factura) - aCentavos(fila.importe_abonado),
+  );
+
+// Recorre las filas en el ORDEN DE MARCADO y reparte el monto disponible.
+// Devuelve los abonos por key (en centavos) y lo que queda disponible.
+const calcularAbonos = (orden, filasPorKey, montoCentavos) => {
+  const abonos = {};
+  let restante = montoCentavos;
+
+  orden.forEach((key) => {
+    const fila = filasPorKey[key];
+    if (!fila) return;
+    const abono = Math.min(saldoRealCentavos(fila), restante);
+    abonos[key] = abono;
+    restante -= abono;
+  });
+
+  return { abonos, restante };
+};
 
 const Pagos = () => {
   const [form] = Form.useForm();
@@ -37,14 +68,13 @@ const Pagos = () => {
   const [valueSelect, setValueSelect] = useState(0);
   const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
-  const [abonos, setAbonos] = useState({});
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  // const [totalImporteRow, setTotalImporteRow] = useState(0);
+  // Keys de las filas seleccionadas
+  const [ordenSeleccion, setOrdenSeleccion] = useState([]);
   const [rowSelectorActivo, setRowSelectorActivo] = useState(false);
   const [esSelectFactActivo, setEsSelectFactActivo] = useState(true);
 
   //################ HOOKS  ################
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const {
     tiposFacturas,
@@ -65,6 +95,7 @@ const Pagos = () => {
 
   //#################### useEffects ###############################
   const montoCapturado = Form.useWatch("monto", form);
+
   useEffect(() => {
     const monto = Number(montoCapturado) || 0;
     setRowSelectorActivo(monto > 0);
@@ -84,126 +115,34 @@ const Pagos = () => {
     }
   }, [isErrorFacturas, errorFacturas, messageApi]);
 
-  // Busca Catalogo Tipo Factura x tipo moneda cliente
+  // Busca Catalogo Tipo Factura x tipo cliente
   useEffect(() => {
-    setParametroCatalogo(user?.moneda_cliente ?? null);
-  }, [user?.moneda_cliente]);
+    const rfcCliente = user.rfc_cliente;
+    //Valida si es venta general o no
+    const esVentaGeneral = RFC_VENTAS_GRALES.includes(rfcCliente) ? 1 : 0;
 
-  //########################################################33
+    setParametroCatalogo(esVentaGeneral ?? null);
+  }, [user.rfc_cliente]);
 
-  //Reinicia la pantalla
-  const handleReset = () => {
-    form.resetFields();
-    setValueSelect(0);
-    setAbonos({});
-    setSelectedRowKeys([]);
-    setEsSelectFactActivo(true);
-    messageApi.info("Formulario limpiado");
-  };
+  // Cuando llegan facturas nuevas, las keys anteriores ya no aplican
+  useEffect(() => {
+    // Reset de la orden de selección al llegar facturas nuevas
+    setOrdenSeleccion([]);
 
-  //LLena valores combo tipos factura
-  const options = tiposFacturas.map((tipo) => ({
-    value: tipo.idTipoFactura,
-    label: tipo.descripcion,
-  }));
+    const nuevoCod = listadoFacturas?.cod_cliente;
+    if (!nuevoCod) return;
+    if (user?.cod_cliente === nuevoCod) return;
 
-  //  Normalizar t_body agregando un "key" para Ant Design
-  // const dataSource = useMemo(() => {
-  //   return (listadoFacturas.t_body ?? []).map((row, index) => ({
-  //     ...row,
-  //     key: row.idenc ?? row.factura?.trim() ?? String(index),
-  //   }));
-  // }, [listadoFacturas.t_body]);
+    updateUser({ cod_cliente: nuevoCod });
+  }, [
+    listadoFacturas?.t_body,
+    listadoFacturas?.cod_cliente,
+    user?.cod_cliente,
+  ]);
 
-  //Cambios claude
-  const dataSource = useMemo(() => {
-    return (listadoFacturas.t_body ?? []).map((row, index) => {
-      const key = row.idenc ?? row.factura?.trim() ?? String(index);
+  //########################################################
 
-      // esFilaSeleccionada
-      const estaSeleccionada = Object.prototype.hasOwnProperty.call(
-        abonos,
-        key,
-      );
-      const abonado = abonos[key] ?? 0;
-      const importeNotaCredito = Number(row.importe_nota_credito) || 0;
-
-      const importeAclarar =
-        estaSeleccionada && importeNotaCredito > 0
-          ? abonado - importeNotaCredito
-          : 0;
-
-      return {
-        ...row,
-        key,
-        abonado,
-        importe_aclarar: importeAclarar,
-      };
-    });
-  }, [listadoFacturas.t_body, abonos]);
-
-  //Seleccion row de tabla, Obtiene data de row
-  const handleSelectionRowChange = (keys, rows) => {
-    setSelectedRowKeys(keys);
-
-    const nuevosAbonos = {};
-    rows.forEach((row) => {
-      nuevosAbonos[row.key] = Number(row.importe_factura) || 0;
-    });
-    setAbonos(nuevosAbonos);
-
-    // Suma local solo para la validación del warning (no se guarda en estado)
-    const totalCentavos = rows.reduce(
-      (sum, row) => sum + Math.round((Number(row.importe_factura) || 0) * 100),
-      0,
-    );
-    const totalRow = totalCentavos / 100;
-
-    if (totalRow > (Number(montoCapturado) || 0)) {
-      messageApi.warning("El total disponible excede el monto capturado");
-    }
-  };
-
-  //  Buscar facturas al hacer click
-  const handleBuscarFacturas = () => {
-    const nuevoParametro = user.cod_cliente;
-    if (nuevoParametro === parametro) {
-      refetchFacturas();
-    } else {
-      setParametro(nuevoParametro);
-    }
-  };
-
-  // Calcula y suma Total de abonado
-  const totalAbonado = useMemo(() => {
-    const totalCentavos = Object.values(abonos).reduce(
-      (sum, value) => sum + Math.round((Number(value) || 0) * 100),
-      0,
-    );
-    return totalCentavos / 100;
-  }, [abonos]);
-
-  //Detecta valor en total Disponible
-  const totalDisponible = useMemo(() => {
-    const montoInicial = Number(montoCapturado) || 0;
-    const auxtotal = montoInicial - totalAbonado;
-    return Math.round(auxtotal * 100) / 100;
-  }, [montoCapturado, totalAbonado]);
-
-  //Detecta seleccion de rows en tabla
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: handleSelectionRowChange,
-    hideSelectAll: true,
-  };
-
-  //Detecta cambio select
-  const handleSelectChange = (value) => {
-    console.log(`Valor Select: ${value}`);
-    setValueSelect(value);
-    setEsSelectFactActivo(false);
-  };
-
+  //Config para subida de archivo
   //Tipo de archivo aceptado
   const TIPO_ARCHIVOS = [
     "image/jpeg",
@@ -228,39 +167,89 @@ const Pagos = () => {
       messageApi.error(`El archivo debe pesar menos de ${MAX_SIZE_MBS} MB`);
       return Upload.LIST_IGNORE;
     }
-    return true;
+    return false; //No subir, solo guardar
   };
 
   // Configuración del Upload
   const uploadProps = {
-    name: "file",
+    name: "comprobante_file",
     action: "https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload",
     headers: { authorization: "authorization-text" },
+    beforeUpload: validaFormato,
     onChange(info) {
-      console.log("info", info);
-      if (info.file.status === "done") {
-        messageApi.success(`${info.file.name} cargado correctamente`);
-      } else if (info.file.status === "error") {
-        messageApi.error(`${info.file.name} falló al cargar`);
-      }
+      // Solo para debug
+      console.log("fileList:", info.fileList);
     },
   };
 
+  //Valida formulario
+  const onRegistrarPagoFailed = () => {
+    messageApi.warning("Por favor, completa los campos requeridos.");
+  };
+
   // Al enviar el formulario
-  const onFinish = async (values) => {
+  const onRegistrarPago = async (values) => {
+    const cod_empresa = 1;
+
+    const fileList = values.archivo || [];
+    const archivoOriginal = fileList[0]?.originFileObj || fileList[0];
+
+    if (!archivoOriginal) {
+      messageApi.warning("Por favor sube el comprobante de pago.");
+      return;
+    }
+
+    // Validar que haya al menos una factura seleccionada
+    if (ordenSeleccion.length === 0) {
+      messageApi.warning("Selecciona al menos una factura para abonar.");
+      return;
+    }
+
+    const detalleFacturas = ordenSeleccion.map((key, index) => {
+      const fila = filasPorKey[key];
+      const abonoCentavos = abonosCentavos[key] ?? 0;
+
+      return {
+        orden: index + 1,
+        factura: fila.factura?.trim(),
+        tipo_moneda: fila.tipo_moneda,
+        importe_factura: aCentavos(fila.importe_factura) / 100,
+        importe_abonado: aCentavos(fila.importe_abonado) / 100,
+        importe_abonar: abonoCentavos / 100,
+        saldo_pendiente_factura:
+          Math.max(0, saldoRealCentavos(fila) - abonoCentavos) / 100,
+      };
+    });
+
+    //Construimos el FormData a enviar
+    const formData = new FormData();
+    formData.append("cod_empresa", cod_empresa);
+    formData.append("rfc_cliente", user?.rfc_cliente ?? "");
+    formData.append("cod_cliente", user?.cod_cliente ?? "");
+    formData.append(
+      "moneda",
+      valueSelect === 1 ? "P" : valueSelect === 2 ? "D" : "V",
+    );
+    formData.append("importe_monto", montoCentavos / 100);
+    formData.append("importe_disponible", totalDisponible);
+    formData.append("importe_abonado", totalAbonado);
+    formData.append("facturas", JSON.stringify(detalleFacturas));
+    formData.append("comprobante_file", archivoOriginal);
+
     setLoading(true);
     try {
-      console.log("Datos del formulario:", {
-        ...values,
-        moneda: value === 1 ? "Pesos" : "Dólares",
-      });
+      for (let [key, value] of formData.entries()) {
+        console.log(key, "-", value);
+      }
 
       // aqui ejecuta el backend
       // await api.post("/pagos", values);
 
       await new Promise((resolve) => setTimeout(resolve, 1200));
+
       messageApi.success("Datos enviados correctamente");
-      form.resetFields();
+      //Reiniciamos formulario
+      handleReset();
     } catch (error) {
       messageApi.error("Ocurrió un error al enviar");
     } finally {
@@ -268,9 +257,150 @@ const Pagos = () => {
     }
   };
 
-  //Valida formulario
-  const onFinishFailed = () => {
-    messageApi.warning("Por favor, completa los campos requeridos.");
+  //Columnas para formatear a dinero $0.00
+  const columnasFormatoMoneda = [
+    "importe_factura",
+    "saldo_pendiente_factura",
+    "importe_abonado",
+    "importe_abonar",
+  ];
+
+  //Reinicia la pantalla
+  const handleReset = () => {
+    form.resetFields();
+    setValueSelect(0);
+    setOrdenSeleccion([]);
+    setEsSelectFactActivo(true);
+  };
+
+  //LLena valores combo tipos factura
+  const options = tiposFacturas.map((tipo) => ({
+    value: tipo.idTipoFactura,
+    label: tipo.descripcion,
+  }));
+
+  //################ DATOS DERIVADOS ################
+  // Filas base con key, SIN modificar los valores del backend
+  const filasBase = useMemo(
+    () =>
+      (listadoFacturas.t_body ?? []).map((row, index) => ({
+        ...row,
+        key: row.idenc ?? row.factura?.trim() ?? String(index),
+      })),
+    [listadoFacturas.t_body],
+  );
+
+  const filasPorKey = useMemo(
+    () => Object.fromEntries(filasBase.map((r) => [r.key, r])),
+    [filasBase],
+  );
+
+  const montoCentavos = aCentavos(montoCapturado);
+
+  // Se recalcula desde cero en cada cambio
+  const { abonos: abonosCentavos, restante: disponibleCentavos } = useMemo(
+    () => calcularAbonos(ordenSeleccion, filasPorKey, montoCentavos),
+    [ordenSeleccion, filasPorKey, montoCentavos],
+  );
+
+  const totalDisponible = disponibleCentavos / 100;
+  const totalAbonado = (montoCentavos - disponibleCentavos) / 100;
+  const hayFilasSeleccionadas = ordenSeleccion.length > 0;
+
+  //Recorrido Datasource
+  const dataSource = useMemo(
+    () =>
+      filasBase.map((row) => {
+        // No seleccionada, valores originales del backend
+        if (!(row.key in abonosCentavos)) {
+          return { ...row, importe_abonar: 0 };
+        }
+
+        // Seleccionada, calculo(saldo real - abono asignado)
+        const abono = abonosCentavos[row.key];
+        return {
+          ...row,
+          importe_abonar: abono / 100,
+          saldo_pendiente_factura:
+            Math.max(0, saldoRealCentavos(row) - abono) / 100,
+        };
+      }),
+    [filasBase, abonosCentavos],
+  );
+
+  //  Buscar facturas al hacer click y cuando selecciona tipo de factura
+  const handleBuscarFacturas = () => {
+    const mapaMonedas = {
+      1: "P", // Peso
+      2: "D", // Dólar
+      3: "V", //Ventas Grales
+    };
+    const moneda = mapaMonedas[valueSelect] || "P";
+
+    if (!valueSelect) {
+      messageApi.warning("Por favor, selecciona el tipo de factura.");
+      return;
+    }
+    const rfc = user?.rfc_cliente;
+    if (!rfc) {
+      messageApi.warning("No se encontró RFC del cliente.");
+      return;
+    }
+
+    const nuevoParametro = {
+      rfc,
+      moneda,
+    };
+
+    const mismoParametro =
+      parametro?.rfc === nuevoParametro.rfc &&
+      parametro?.moneda === nuevoParametro.moneda;
+
+    if (mismoParametro) {
+      refetchFacturas();
+    } else {
+      setParametro(nuevoParametro);
+    }
+  };
+
+  //Seleccion row de tabla
+  const handleSelectionRowChange = (keys) => {
+    // Conserva el orden previo, quita las desmarcadas y agrega las nuevas al final
+    const nuevoOrden = [
+      ...ordenSeleccion.filter((k) => keys.includes(k)),
+      ...keys.filter((k) => !ordenSeleccion.includes(k)),
+    ];
+    setOrdenSeleccion(nuevoOrden);
+
+    // Aviso solo al marcar una fila y agotar el saldo
+    if (nuevoOrden.length > ordenSeleccion.length) {
+      const { restante } = calcularAbonos(
+        nuevoOrden,
+        filasPorKey,
+        montoCentavos,
+      );
+      if (restante === 0) {
+        messageApi.warning("El total disponible se ha terminado");
+      }
+    }
+  };
+
+  //Detecta seleccion de rows en tabla
+  const rowSelection = {
+    selectedRowKeys: ordenSeleccion,
+    onChange: handleSelectionRowChange,
+    hideSelectAll: true,
+    getCheckboxProps: (record) => ({
+      // Solo se bloquean las NO seleccionadas cuando ya no hay saldo
+      disabled: disponibleCentavos <= 0 && !ordenSeleccion.includes(record.key),
+    }),
+  };
+
+  //Detecta cambio select
+  const handleSelectChange = (value) => {
+    console.log(`Tipo Factura: ${value}`);
+    setValueSelect(value);
+    setEsSelectFactActivo(false);
   };
 
   // Helper para generar el contenido del Popover
@@ -314,8 +444,8 @@ const Pagos = () => {
           layout="vertical"
           size="large"
           initialValues={{ valueSelect: null, monto: null }}
-          onFinish={onFinish}
-          onFinishFailed={onFinishFailed}
+          onFinish={onRegistrarPago}
+          onFinishFailed={onRegistrarPagoFailed}
           autoComplete="off"
           requiredMark={false}
         >
@@ -355,12 +485,7 @@ const Pagos = () => {
                   { required: true, message: "Sube Comprobante de Pago *" },
                 ]}
               >
-                <Upload
-                  {...uploadProps}
-                  maxCount={1}
-                  accept=".jpg,.jpeg,.png,.pdf"
-                  beforeUpload={validaFormato}
-                >
+                <Upload {...uploadProps}>
                   <Button icon={<UploadOutlined />}>Seleccionar archivo</Button>
                 </Upload>
               </Form.Item>
@@ -383,7 +508,7 @@ const Pagos = () => {
                   style={{ width: "100%" }}
                   placeholder="0.00"
                   min={0}
-                  disabled={esSelectFactActivo}
+                  disabled={esSelectFactActivo || hayFilasSeleccionadas}
                   precision={2}
                   prefix={"$"}
                   formatter={(v) =>
@@ -434,7 +559,7 @@ const Pagos = () => {
           <Divider />
         </Form>
         {/* DATATABLE DE LAS FACTURAS*/}
-        {dataSource.length > 1 ? (
+        {dataSource.length > 0 ? (
           <>
             <Flex
               justify="space-between"
@@ -456,11 +581,11 @@ const Pagos = () => {
                     padding: 8,
                   }}
                 >
-                  Total Abonado:
+                  Total Abonar:
                 </Text>
                 <Popover
                   content={renderPopoverContent(totalAbonado)}
-                  title="Cantidad en letras"
+                  title="Cantidad a abonar:"
                   trigger="hover"
                   placement="left"
                 >
@@ -507,7 +632,7 @@ const Pagos = () => {
                 </Text>
                 <Popover
                   content={renderPopoverContent(totalDisponible)}
-                  title="Cantidad en letras"
+                  title="Cantidad Disponible"
                   trigger="hover"
                   placement="left"
                 >
@@ -538,7 +663,8 @@ const Pagos = () => {
               tHeader={listadoFacturas.t_header}
               tBody={dataSource}
               loading={isLoadingFacturas}
-              pagination={{ pageSize: 15, showSizeChanger: false }}
+              currencyColumns={columnasFormatoMoneda}
+              pagination={{ pageSize: 20, showSizeChanger: false }}
               rowSelection={
                 rowSelectorActivo ? rowSelection : rowSelectorActivo
               }

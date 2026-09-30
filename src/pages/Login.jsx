@@ -1,10 +1,21 @@
-import React, { useState } from "react";
-import { Form, Input, Button, Card, Typography, message, Flex } from "antd";
+import { useState } from "react";
+import {
+  Form,
+  Input,
+  Button,
+  Card,
+  Popover,
+  Typography,
+  message,
+  Switch,
+  Space,
+  Divider,
+} from "antd";
 import {
   MailOutlined,
   LockOutlined,
-  LoginOutlined,
   UserOutlined,
+  QuestionCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -25,16 +36,43 @@ const { Title, Text } = Typography;
 const Login = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [checkedRFC, setCheckedRFC] = useState(false);
   const navigate = useNavigate();
   const { IniciarSesion } = useLogin();
   const { login } = useAuth();
 
+  //Ayuda Pop Hover RFC
+  const contentPopOver = (
+    <div style={{ maxWidth: 320 }}>
+      <Text strong>Persona Física:</Text>
+      <ul style={{ paddingLeft: 20 }}>
+        <li>4 letras referentes al nombre.</li>
+        <li>6 dígitos de la fecha de nacimiento (AAMMDD).</li>
+        <li>3 caracteres de homoclave.</li>
+      </ul>
+      <Text type="secondary">Ejemplo: AUJE860724KL9</Text> <Divider></Divider>
+      <Text strong>Persona Moral:</Text>
+      <ul style={{ paddingLeft: 20 }}>
+        <li>3 letras referentes a la empresa.</li>
+        <li>6 dígitos de la fecha creación (AAMMDD).</li>
+        <li>3 caracteres de homoclave.</li>
+      </ul>
+      <Text type="secondary">Ejemplo: CLE810524EO9</Text>
+    </div>
+  );
+  //Check para acceso con RFC
+  const onChangeSwitch = (checked) => {
+    setCheckedRFC(checked);
+  };
+
   const onLogin = async (values) => {
     setLoading(true);
 
+    console.log("VALORES ", values);
+
     const result = await IniciarSesion({
       cod_cliente: values.cod_cliente,
-      correo: values.correo,
+      rfc: values.rfc,
       password: values.password,
     });
 
@@ -42,6 +80,8 @@ const Login = () => {
 
     if (result.success) {
       const clienteData = result.data;
+      Object.assign(clienteData, { rfc_cliente: values.rfc });
+
       login(clienteData);
 
       message.open({
@@ -107,7 +147,7 @@ const Login = () => {
           requiredMark={false}
         >
           {/* Codigo de Cliente */}
-          <Form.Item
+          {/* <Form.Item
             label={<span style={titleTextsInputs}>Codigo de Cliente:</span>}
             name="cod_cliente"
             rules={[
@@ -128,21 +168,80 @@ const Login = () => {
               placeholder="ABC123"
               autoComplete="cod-cliente"
             />
-          </Form.Item>
-
+          </Form.Item> */}
           {/* Correo */}
+          {/* {!checkedRFC ? (
+            <Form.Item
+              label={<span style={titleTextsInputs}>Correo Electrónico:</span>}
+              name="correo"
+              rules={[
+                { required: true, message: "Por favor ingresa tu correo" },
+                { type: "email", message: "Ingresa un correo válido" },
+              ]}
+            >
+              <Input
+                prefix={<MailOutlined style={{ color: "#bfbfbf" }} />}
+                placeholder="correo@ejemplo.com"
+                autoComplete="email"
+              />
+            </Form.Item>
+          ) : (
+            <Popover content={contentPopOver} title="Ayuda" placement="right">
+              <Form.Item
+                label={<span style={titleTextsInputs}>RFC:</span>}
+                name="rfc"
+                rules={[
+                  { required: true, message: "Por favor ingresa tu RFC" },
+                  { type: "string", message: "Ingresa el RFC" },
+                  { min: 12, message: "Complete su RFC para acceder" },
+                ]}
+              >
+                <Input
+                  prefix={
+                    <UserOutlined style={{ width: "100%", color: "#bfbfbf" }} />
+                  }
+                  placeholder="XAXX010101000"
+                  autoComplete="RFC"
+                />
+              </Form.Item>
+            </Popover>
+          )}
+          <Switch onChange={onChangeSwitch} />
+          <span style={titleTextsInputs}> RFC</span> */}
+
           <Form.Item
-            label={<span style={titleTextsInputs}>Correo Electrónico:</span>}
-            name="correo"
+            label={
+              <Space align="center" style={{ cursor: "default" }}>
+                <span style={titleTextsInputs}>RFC:</span>
+                <Popover
+                  content={contentPopOver}
+                  title="Ayuda"
+                  placement="right"
+                  trigger="hover"
+                  mouseLeaveDelay={0.2}
+                >
+                  {/* Estilamos el icono para que parezca interactivo */}
+                  <QuestionCircleOutlined
+                    style={{
+                      color: "#1890ff", // Color azul típico de ayuda
+                      fontSize: "16px",
+                      cursor: "pointer",
+                    }}
+                  />
+                </Popover>
+              </Space>
+            }
+            name="rfc"
             rules={[
-              { required: true, message: "Por favor ingresa tu correo" },
-              { type: "email", message: "Ingresa un correo válido" },
+              { required: true, message: "Por favor ingresa tu RFC" },
+              { type: "string", message: "Ingresa el RFC" },
+              { min: 12, message: "Complete su RFC para acceder" },
             ]}
           >
             <Input
-              prefix={<MailOutlined style={{ color: "#bfbfbf" }} />}
-              placeholder="correo@ejemplo.com"
-              autoComplete="email"
+              prefix={<UserOutlined style={{ color: "#bfbfbf" }} />}
+              placeholder="XAXX010101000"
+              autoComplete="RFC"
             />
           </Form.Item>
 
@@ -161,7 +260,6 @@ const Login = () => {
               autoComplete="current-password"
             />
           </Form.Item>
-
           {/* Botón de inicio de sesión */}
           <Form.Item style={{ marginBottom: 8 }}>
             <Button type="primary" htmlType="submit" loading={loading} block>
@@ -176,7 +274,6 @@ const Login = () => {
               </span>
             </Button>
           </Form.Item>
-
           {/* Restablecer Contraseña */}
           <Form.Item style={{ marginBottom: 12 }}>
             <Link to="/solicitar-reiniciar-password">

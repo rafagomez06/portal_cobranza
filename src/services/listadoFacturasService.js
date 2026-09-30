@@ -1,7 +1,7 @@
 import { ApiConexion } from "../configs/ApiConexion";
 
-export const fetchListadoFacturas = (cod_cliente, config = {}) =>
+export const fetchListadoFacturas = (paramsData, config = {}) =>
   ApiConexion.get("/pago/listado-facturas", {
-    params: { cod_cliente },
+    params: paramsData,
     ...config,
   });
