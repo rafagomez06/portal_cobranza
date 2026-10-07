@@ -39,7 +39,7 @@ const SolicitarReiniciarPass = () => {
       message.open({
         type: "success",
         content: result.message,
-        duration: 5,
+        duration: 8,
       });
       navigate("/login");
       return;

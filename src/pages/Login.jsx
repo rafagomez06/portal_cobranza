@@ -61,14 +61,12 @@ const Login = () => {
     </div>
   );
   //Check para acceso con RFC
-  const onChangeSwitch = (checked) => {
-    setCheckedRFC(checked);
-  };
+  // const onChangeSwitch = (checked) => {
+  //   setCheckedRFC(checked);
+  // };
 
   const onLogin = async (values) => {
     setLoading(true);
-
-    console.log("VALORES ", values);
 
     const result = await IniciarSesion({
       cod_cliente: values.cod_cliente,

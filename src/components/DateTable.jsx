@@ -11,6 +11,11 @@ export default function DataTable({
   pagination = { pageSize: 10 },
   rowSelection = false,
   rowKey = "key",
+  // columna de acciones (o cualquier columna extra)
+  actionColumn = null,
+  renderers = {},
+  columnWidths = {},
+
   ...rest
 }) {
   //Formateo moneda
@@ -25,26 +30,31 @@ export default function DataTable({
 
   // Mapear t_header columns de antd
   const columns = tHeader
-    .map((col) => ({
-      title: col.title,
-      dataIndex: col.dataIndex,
-      key: col.key || col.dataIndex,
-      align:
-        col.align ||
-        (currencyColumns.includes(col.dataIndex) ? "left" : "left"),
-      hidden: col.hidden || false,
-      render: (value) => {
-        if (
-          currencyColumns.includes(col.dataIndex) &&
-          value != null &&
-          value !== ""
-        ) {
-          return formatCurrency(value);
-        }
-        return value;
-      },
-    }))
+    .map((col) => {
+      const key = col.key || col.dataIndex;
+      const isCurrency = currencyColumns.includes(col.dataIndex);
+
+      return {
+        title: col.title,
+        dataIndex: col.dataIndex,
+        key,
+        align: col.align || (isCurrency ? "right" : "right"),
+        width: col.width || columnWidths[col.dataIndex],
+        hidden: col.hidden || false,
+        render:
+          renderers[col.dataIndex] ||
+          ((value) => {
+            if (isCurrency && value != null && value !== "") {
+              return formatCurrency(value);
+            }
+            return value;
+          }),
+      };
+    })
     .filter((c) => !c.hidden);
+
+  //  Agregar columna de acciones al final (o donde se prefiera)
+  const finalColumns = actionColumn ? [...columns, actionColumn] : columns;
 
   // Asegurar key en dataSource
   const dataSource = tBody.map((row, i) => ({
@@ -54,7 +64,7 @@ export default function DataTable({
 
   return (
     <Table
-      columns={columns}
+      columns={finalColumns}
       dataSource={dataSource}
       loading={loading}
       pagination={pagination}

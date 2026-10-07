@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import {
+  Space,
   Card,
   Breadcrumb,
   Form,
@@ -10,6 +11,7 @@ import {
   Divider,
   Flex,
   Row,
+  Modal,
   Col,
   Typography,
   message,
@@ -18,9 +20,11 @@ import {
 } from "antd";
 import {
   UploadOutlined,
+  EyeOutlined,
   SaveOutlined,
   SearchOutlined,
   ClearOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import { RFC_VENTAS_GRALES } from "../constants/RfcGenericos";
 import DataTable from "../components/DateTable";
@@ -28,6 +32,9 @@ import { NumeroALetras } from "../utils/NumeroALetras";
 import { CardStyle } from "../configs/Estilos";
 import { useCatalogos } from "../hooks/useCatalogos";
 import { useListadoFacturas } from "../hooks/useListadoFacturas";
+import { useHistorialPagosFacturas } from "../hooks/useHistorialPagosFacturas";
+import { useRegistrarPago } from "../hooks/useRegistrarPago";
+
 import { useAuth } from "../context/AuthContext";
 
 const { Title, Text } = Typography;
@@ -64,6 +71,7 @@ const calcularAbonos = (orden, filasPorKey, montoCentavos) => {
 const Pagos = () => {
   const [form] = Form.useForm();
   const [parametro, setParametro] = useState(null);
+  const [parametroHistorial, setParametroHistorial] = useState(null);
   const [parametroCatalogo, setParametroCatalogo] = useState(null);
   const [valueSelect, setValueSelect] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -72,9 +80,19 @@ const Pagos = () => {
   const [ordenSeleccion, setOrdenSeleccion] = useState([]);
   const [rowSelectorActivo, setRowSelectorActivo] = useState(false);
   const [esSelectFactActivo, setEsSelectFactActivo] = useState(true);
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+  const handleOk = () => {
+    setIsModalOpen(false);
+  };
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
   //################ HOOKS  ################
   const { user, updateUser } = useAuth();
+  const { RegistrarPago } = useRegistrarPago();
 
   const {
     tiposFacturas,
@@ -90,6 +108,14 @@ const Pagos = () => {
     error: errorFacturas,
     refetch: refetchFacturas,
   } = useListadoFacturas(parametro);
+
+  const {
+    historialPagosFacturas,
+    isLoading: isLoadingHistorial,
+    isError: isErrorHistorial,
+    error: errorHistorial,
+    refetch: refetchHistorial,
+  } = useHistorialPagosFacturas(parametroHistorial);
 
   //################################################################
 
@@ -173,7 +199,6 @@ const Pagos = () => {
   // Configuración del Upload
   const uploadProps = {
     name: "comprobante_file",
-    action: "https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload",
     headers: { authorization: "authorization-text" },
     beforeUpload: validaFormato,
     onChange(info) {
@@ -207,11 +232,14 @@ const Pagos = () => {
 
     const detalleFacturas = ordenSeleccion.map((key, index) => {
       const fila = filasPorKey[key];
+
+      console.log("Fila: ", fila);
       const abonoCentavos = abonosCentavos[key] ?? 0;
 
       return {
         orden: index + 1,
         factura: fila.factura?.trim(),
+        fecha: fila.fecha,
         tipo_moneda: fila.tipo_moneda,
         importe_factura: aCentavos(fila.importe_factura) / 100,
         importe_abonado: aCentavos(fila.importe_abonado) / 100,
@@ -221,7 +249,7 @@ const Pagos = () => {
       };
     });
 
-    //Construimos el FormData a enviar
+    //Construimos el FormData a enviar al back
     const formData = new FormData();
     formData.append("cod_empresa", cod_empresa);
     formData.append("rfc_cliente", user?.rfc_cliente ?? "");
@@ -235,21 +263,35 @@ const Pagos = () => {
     formData.append("importe_abonado", totalAbonado);
     formData.append("facturas", JSON.stringify(detalleFacturas));
     formData.append("comprobante_file", archivoOriginal);
-
     setLoading(true);
     try {
-      for (let [key, value] of formData.entries()) {
-        console.log(key, "-", value);
+      const result = await RegistrarPago(formData);
+      setLoading(false);
+      if (result.success) {
+        message.open({
+          type: "success",
+          content: result.message,
+          duration: 5,
+        });
+        messageApi.success("Datos enviados correctamente");
+        //Reiniciamos formulario
+        handleReset();
+        return;
       }
 
-      // aqui ejecuta el backend
-      // await api.post("/pagos", values);
-
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      messageApi.success("Datos enviados correctamente");
-      //Reiniciamos formulario
-      handleReset();
+      switch (result.status_message) {
+        case "canceled":
+          return; // no mostramos nada
+        case "network_error":
+        case "timeout":
+          message.error(result.message);
+          break;
+        case "login_failed":
+          message.error(result.message);
+          break;
+        default:
+          message.error(result.message);
+      }
     } catch (error) {
       messageApi.error("Ocurrió un error al enviar");
     } finally {
@@ -398,7 +440,6 @@ const Pagos = () => {
 
   //Detecta cambio select
   const handleSelectChange = (value) => {
-    console.log(`Tipo Factura: ${value}`);
     setValueSelect(value);
     setEsSelectFactActivo(false);
   };
@@ -426,6 +467,50 @@ const Pagos = () => {
       </div>
     );
   };
+
+  //Detecta cambio select
+  const handleVerDetalle = (record) => {
+    const valorFact = record.factura;
+    const factura = valorFact.trim();
+    const cod_cliente = user?.cod_cliente;
+
+    if (!factura) {
+      messageApi.warning("No se encontró factura del cliente.");
+      return;
+    }
+
+    if (!cod_cliente) {
+      messageApi.warning("No se encontró Codigo del cliente.");
+      return;
+    }
+
+    const nuevoParametroHistorial = {
+      cod_cliente,
+      factura,
+    };
+
+    setParametroHistorial(nuevoParametroHistorial);
+    showModal();
+  };
+
+  //Boton de acción
+  const actionColumn = {
+    title: "Detalle",
+    key: "acciones",
+    align: "center",
+    width: 70,
+    fixed: "right",
+    render: (_, record) => (
+      <Space size="small">
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => handleVerDetalle(record)}
+        />
+      </Space>
+    ),
+  };
+
   return (
     <>
       {contextHolder}
@@ -668,7 +753,32 @@ const Pagos = () => {
               rowSelection={
                 rowSelectorActivo ? rowSelection : rowSelectorActivo
               }
+              actionColumn={actionColumn}
             />
+
+            <Modal
+              title="Historial de Pagos"
+              closable={{ "aria-label": "Custom Close Button" }}
+              open={isModalOpen}
+              onOk={handleOk}
+              onCancel={handleCancel}
+            >
+              <p>
+                Nota: Los pagos pueden demorar en reflejarse en el saldo real.*
+              </p>
+
+              {historialPagosFacturas.t_body.length > 0 ? (
+                <DataTable
+                  tHeader={historialPagosFacturas.t_header}
+                  tBody={historialPagosFacturas.t_body}
+                  loading={isLoadingHistorial}
+                  currencyColumns={columnasFormatoMoneda}
+                  pagination={{ pageSize: 20, showSizeChanger: false }}
+                />
+              ) : (
+                <Empty description="No hay registros de pagos para mostrar" />
+              )}
+            </Modal>
           </>
         ) : (
           <Empty description="No hay facturas para mostrar" />

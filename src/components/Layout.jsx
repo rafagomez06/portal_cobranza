@@ -23,9 +23,8 @@ const { Text } = Typography;
 
 //Rutas de opciones Sidebar
 const RUTA_CLAVE = {
-  "/": "1",
-  "/pagos": "2",
-  "/configuracion": "3",
+  "/pagos": "1",
+  "/configuracion": "2",
 };
 
 const AppLayout = () => {
@@ -113,16 +112,11 @@ const AppLayout = () => {
             items={[
               {
                 key: "1",
-                icon: <HomeOutlined />,
-                label: <Link to="/">Inicio</Link>,
-              },
-              {
-                key: "2",
                 icon: <DollarCircleOutlined />,
                 label: <Link to="/pagos">Pagos</Link>,
               },
               {
-                key: "3",
+                key: "2",
                 icon: <SettingOutlined />,
                 label: <Link to="/configuracion">Configuración</Link>,
               },

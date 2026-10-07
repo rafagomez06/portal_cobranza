@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./components/Layout";
-import Inicio from "./pages/Inicio";
-import Perfil from "./pages/Perfil";
 import Pagos from "./pages/Pagos";
 import Login from "./pages/Login";
 import SolicitarReiniciarPass from "./pages/SolicitarReiniciarPass";
@@ -75,8 +73,7 @@ const App = () => {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Inicio />} />
-              <Route path="perfil" element={<Perfil />} />
+              <Route index element={<Pagos />} />
               <Route
                 path="configuracion"
                 element={<SolicitarReiniciarPass />}

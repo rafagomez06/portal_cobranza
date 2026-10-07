@@ -22,7 +22,7 @@ export function useCatalogos(parametroCatalogo, options = {}) {
     queryKey: [QUERY_KEYS.tiposFacturas, parametroCatalogo],
     queryFn: ({ signal }) => fetchCatalogos(parametroCatalogo, { signal }),
     select: selectTiposFacturas,
-    staleTime: 1000 * 60 * 5, // 5 min
+    staleTime: 1000 * 60 * 30, // 30 min
     ...options,
   });
 
