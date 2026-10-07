@@ -201,10 +201,6 @@ const Pagos = () => {
     name: "comprobante_file",
     headers: { authorization: "authorization-text" },
     beforeUpload: validaFormato,
-    onChange(info) {
-      // Solo para debug
-      console.log("fileList:", info.fileList);
-    },
   };
 
   //Valida formulario
@@ -224,16 +220,14 @@ const Pagos = () => {
       return;
     }
 
-    // Validar que haya al menos una factura seleccionada
-    if (ordenSeleccion.length === 0) {
-      messageApi.warning("Selecciona al menos una factura para abonar.");
-      return;
-    }
+    // // Validar que haya al menos una factura seleccionada
+    // if (ordenSeleccion.length === 0) {
+    //   messageApi.warning("Selecciona al menos una factura para abonar.");
+    //   return;
+    // }
 
     const detalleFacturas = ordenSeleccion.map((key, index) => {
       const fila = filasPorKey[key];
-
-      console.log("Fila: ", fila);
       const abonoCentavos = abonosCentavos[key] ?? 0;
 
       return {
@@ -261,7 +255,10 @@ const Pagos = () => {
     formData.append("importe_monto", montoCentavos / 100);
     formData.append("importe_disponible", totalDisponible);
     formData.append("importe_abonado", totalAbonado);
-    formData.append("facturas", JSON.stringify(detalleFacturas));
+    // Validamos si vienene seleccionadas las facturas o no
+    if (Array.isArray(detalleFacturas) && detalleFacturas.length > 0) {
+      formData.append("facturas", JSON.stringify(detalleFacturas));
+    }
     formData.append("comprobante_file", archivoOriginal);
     setLoading(true);
     try {
@@ -654,7 +651,7 @@ const Pagos = () => {
               gap="middle"
             >
               <Title level={4} style={{ margin: 0 }}>
-                Lista de Facturas
+                Listado de Facturas Pendientes
               </Title>
               <Flex align="center" gap="small">
                 <Text

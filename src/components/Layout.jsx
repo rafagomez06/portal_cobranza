@@ -37,7 +37,6 @@ const AppLayout = () => {
   const CerrarSesion = () => {
     // Elimina storage
     localStorage.clear();
-    console.log("Sesión cerrada");
     navigate("/login"); // Redirige a tu pantalla de login
   };
 
