@@ -13,6 +13,7 @@ import {
   Row,
   Modal,
   Col,
+  Tooltip,
   Typography,
   message,
   InputNumber,
@@ -24,21 +25,23 @@ import {
   SaveOutlined,
   SearchOutlined,
   ClearOutlined,
-  DeleteOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { RFC_VENTAS_GRALES } from "../constants/RfcGenericos";
 import DataTable from "../components/DateTable";
+import ModalDetalle from "../components/ModalDetalle";
 import { NumeroALetras } from "../utils/NumeroALetras";
 import { CardStyle } from "../configs/Estilos";
+//Hooks
 import { useCatalogos } from "../hooks/useCatalogos";
 import { useListadoFacturas } from "../hooks/useListadoFacturas";
+import { useHistorialNotasCredito } from "../hooks/useHistorialNotasCredito";
 import { useHistorialPagosFacturas } from "../hooks/useHistorialPagosFacturas";
 import { useRegistrarPago } from "../hooks/useRegistrarPago";
-
+//Context
 import { useAuth } from "../context/AuthContext";
 
 const { Title, Text } = Typography;
-
 //################ HELPERS ################
 
 // Convierte cualquier valor numerico/string a centavos enteros
@@ -72,6 +75,7 @@ const Pagos = () => {
   const [form] = Form.useForm();
   const [parametro, setParametro] = useState(null);
   const [parametroHistorial, setParametroHistorial] = useState(null);
+  const [parametroNotaCredito, setParametroNotaCredito] = useState(null);
   const [parametroCatalogo, setParametroCatalogo] = useState(null);
   const [valueSelect, setValueSelect] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -80,27 +84,19 @@ const Pagos = () => {
   const [ordenSeleccion, setOrdenSeleccion] = useState([]);
   const [rowSelectorActivo, setRowSelectorActivo] = useState(false);
   const [esSelectFactActivo, setEsSelectFactActivo] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
-  const handleOk = () => {
-    setIsModalOpen(false);
-  };
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
-  //################ HOOKS  ################
+  const [modalAbierto, setModalAbierto] = useState(null);
+
+  //################ Consumo Hooks  ################
   const { user, updateUser } = useAuth();
   const { RegistrarPago } = useRegistrarPago();
-
+  //Catalogo
   const {
     tiposFacturas,
     isLoading: isLoadingCatalogos,
     isError,
     error,
   } = useCatalogos(parametroCatalogo);
-
+  //Facturas
   const {
     listadoFacturas,
     isLoading: isLoadingFacturas,
@@ -108,7 +104,7 @@ const Pagos = () => {
     error: errorFacturas,
     refetch: refetchFacturas,
   } = useListadoFacturas(parametro);
-
+  //Historial Pagos
   const {
     historialPagosFacturas,
     isLoading: isLoadingHistorial,
@@ -117,7 +113,36 @@ const Pagos = () => {
     refetch: refetchHistorial,
   } = useHistorialPagosFacturas(parametroHistorial);
 
+  //Listado Notas Credito
+  const {
+    historialNotasCredito,
+    isLoading: isLoadingNotasCredito,
+    isError: isErrorNotasCredito,
+    error: errorNotasCredito,
+    refetch: refetchNotasCredito,
+  } = useHistorialNotasCredito(parametroNotaCredito);
+
   //################################################################
+  //Modales a mostrar
+  const MODAL_CONFIG = {
+    historialPagos: {
+      title: "Historial de Pagos",
+      tHeader: historialPagosFacturas.t_header,
+      tBody: historialPagosFacturas.t_body,
+      loading: isLoadingHistorial,
+      emptyText: "No hay registros de pagos para mostrar",
+      nota: "Nota: Los pagos pueden demorar en reflejarse en el saldo real.*",
+    },
+    notasCredito: {
+      title: "Notas de Crédito",
+      tHeader: historialNotasCredito.t_header,
+      tBody: historialNotasCredito.t_body,
+      loading: isLoadingNotasCredito,
+      emptyText: "No hay notas de crédito para mostrar",
+    },
+  };
+
+  const config = modalAbierto ? MODAL_CONFIG[modalAbierto] : {};
 
   //#################### useEffects ###############################
   const montoCapturado = Form.useWatch("monto", form);
@@ -220,12 +245,6 @@ const Pagos = () => {
       return;
     }
 
-    // // Validar que haya al menos una factura seleccionada
-    // if (ordenSeleccion.length === 0) {
-    //   messageApi.warning("Selecciona al menos una factura para abonar.");
-    //   return;
-    // }
-
     const detalleFacturas = ordenSeleccion.map((key, index) => {
       const fila = filasPorKey[key];
       const abonoCentavos = abonosCentavos[key] ?? 0;
@@ -301,6 +320,7 @@ const Pagos = () => {
     "importe_factura",
     "saldo_pendiente_factura",
     "importe_abonado",
+    "importe",
     "importe_abonar",
   ];
 
@@ -481,13 +501,37 @@ const Pagos = () => {
       return;
     }
 
-    const nuevoParametroHistorial = {
+    const nvoParamHistorial = {
       cod_cliente,
       factura,
     };
 
-    setParametroHistorial(nuevoParametroHistorial);
-    showModal();
+    setParametroHistorial(nvoParamHistorial);
+    setModalAbierto("historialPagos");
+  };
+
+  const handleVerNotasCredito = (record) => {
+    const valorFact = record.factura;
+    const factura = valorFact.trim();
+    const cod_cliente = user?.cod_cliente;
+
+    if (!factura) {
+      messageApi.warning("No se encontró factura del cliente.");
+      return;
+    }
+
+    if (!cod_cliente) {
+      messageApi.warning("No se encontró Codigo del cliente.");
+      return;
+    }
+
+    const nvoParamNotaCredito = {
+      cod_cliente,
+      factura,
+    };
+
+    setParametroNotaCredito(nvoParamNotaCredito);
+    setModalAbierto("notasCredito");
   };
 
   //Boton de acción
@@ -499,11 +543,20 @@ const Pagos = () => {
     fixed: "right",
     render: (_, record) => (
       <Space size="small">
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => handleVerDetalle(record)}
-        />
+        <Tooltip title="Ver Pagos">
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => handleVerDetalle(record)}
+          />
+        </Tooltip>
+        <Tooltip title="Ver Notas de Crédito">
+          <Button
+            type="link"
+            icon={<DollarOutlined />}
+            onClick={() => handleVerNotasCredito(record)}
+          />
+        </Tooltip>
       </Space>
     ),
   };
@@ -753,29 +806,12 @@ const Pagos = () => {
               actionColumn={actionColumn}
             />
 
-            <Modal
-              title="Historial de Pagos"
-              closable={{ "aria-label": "Custom Close Button" }}
-              open={isModalOpen}
-              onOk={handleOk}
-              onCancel={handleCancel}
-            >
-              <p>
-                Nota: Los pagos pueden demorar en reflejarse en el saldo real.*
-              </p>
-
-              {historialPagosFacturas.t_body.length > 0 ? (
-                <DataTable
-                  tHeader={historialPagosFacturas.t_header}
-                  tBody={historialPagosFacturas.t_body}
-                  loading={isLoadingHistorial}
-                  currencyColumns={columnasFormatoMoneda}
-                  pagination={{ pageSize: 20, showSizeChanger: false }}
-                />
-              ) : (
-                <Empty description="No hay registros de pagos para mostrar" />
-              )}
-            </Modal>
+            <ModalDetalle
+              open={!!modalAbierto}
+              onClose={() => setModalAbierto(null)}
+              currencyColumns={columnasFormatoMoneda}
+              {...config}
+            />
           </>
         ) : (
           <Empty description="No hay facturas para mostrar" />
