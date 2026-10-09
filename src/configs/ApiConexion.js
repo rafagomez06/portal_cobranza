@@ -33,6 +33,11 @@ ApiConexion.interceptors.request.use((config) => {
 ApiConexion.interceptors.response.use(
   // 2xx: resolvemos directamente con el contenido de "body"
   (response) => {
+    //Si es un Blob retorna respuesta(archivo)
+    if (response.config.responseType === "blob") {
+      return response; //  devuelve la respuesta completa
+    }
+
     const body = response.data?.body;
     if (body?.status_code) return body;
 
@@ -54,7 +59,17 @@ ApiConexion.interceptors.response.use(
   },
 
   // Errores: siempre rechazamos con el formato estándar
-  (error) => {
+  async (error) => {
+    //Si el error viene como Blob, parsearlo a JSON antes de normalizarlo
+    const errorBlob = error?.response?.data;
+    if (errorBlob instanceof Blob) {
+      try {
+        const text = await errorBlob.text();
+        error.response.data = JSON.parse(text);
+      } catch {
+        // Si no se puede parsear, dejar como está
+      }
+    }
     const normalized = normalizeError(error);
     // Sesión expirada. Se excluye el login: ahí un 401 significa
     const isLoginRequest = error?.config?.url?.includes("/auth/login");

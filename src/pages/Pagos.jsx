@@ -23,6 +23,7 @@ import {
   UploadOutlined,
   EyeOutlined,
   SaveOutlined,
+  FilePdfOutlined,
   SearchOutlined,
   ClearOutlined,
   DollarOutlined,
@@ -38,6 +39,8 @@ import { useListadoFacturas } from "../hooks/useListadoFacturas";
 import { useHistorialNotasCredito } from "../hooks/useHistorialNotasCredito";
 import { useHistorialPagosFacturas } from "../hooks/useHistorialPagosFacturas";
 import { useRegistrarPago } from "../hooks/useRegistrarPago";
+import { fetchVerFacturaCliente } from "../services/verFacturaClienteService";
+
 //Context
 import { useAuth } from "../context/AuthContext";
 
@@ -96,6 +99,7 @@ const Pagos = () => {
     isError,
     error,
   } = useCatalogos(parametroCatalogo);
+
   //Facturas
   const {
     listadoFacturas,
@@ -104,6 +108,7 @@ const Pagos = () => {
     error: errorFacturas,
     refetch: refetchFacturas,
   } = useListadoFacturas(parametro);
+
   //Historial Pagos
   const {
     historialPagosFacturas,
@@ -130,7 +135,7 @@ const Pagos = () => {
       tHeader: historialPagosFacturas.t_header,
       tBody: historialPagosFacturas.t_body,
       loading: isLoadingHistorial,
-      emptyText: "No hay registros de pagos para mostrar",
+      emptyText: "No hay registros de pagos para mostrar de esta factura",
       nota: "Nota: Los pagos pueden demorar en reflejarse en el saldo real.*",
     },
     notasCredito: {
@@ -138,7 +143,7 @@ const Pagos = () => {
       tHeader: historialNotasCredito.t_header,
       tBody: historialNotasCredito.t_body,
       loading: isLoadingNotasCredito,
-      emptyText: "No hay notas de crédito para mostrar",
+      emptyText: "No hay notas de crédito para mostrar de esta factura",
     },
   };
 
@@ -485,7 +490,7 @@ const Pagos = () => {
     );
   };
 
-  //Detecta cambio select
+  //Visualizar Pagos a factura
   const handleVerDetalle = (record) => {
     const valorFact = record.factura;
     const factura = valorFact.trim();
@@ -509,7 +514,7 @@ const Pagos = () => {
     setParametroHistorial(nvoParamHistorial);
     setModalAbierto("historialPagos");
   };
-
+  //Visualizar Notas de credito
   const handleVerNotasCredito = (record) => {
     const valorFact = record.factura;
     const factura = valorFact.trim();
@@ -533,19 +538,31 @@ const Pagos = () => {
     setParametroNotaCredito(nvoParamNotaCredito);
     setModalAbierto("notasCredito");
   };
+  //Visualizar Factura
+  const handleVerFactura = async (record) => {
+    try {
+      await fetchVerFacturaCliente({
+        cod_cliente: record.cod_cliente,
+        factura: record.factura,
+      });
+    } catch (error) {
+      message.error(error?.message || "No se pudo abrir la factura");
+    }
+  };
 
   //Boton de acción
   const actionColumn = {
     title: "Detalle",
     key: "acciones",
     align: "center",
-    width: 70,
-    fixed: "right",
+    width: 10,
+    fixed: "left",
     render: (_, record) => (
       <Space size="small">
         <Tooltip title="Ver Pagos">
           <Button
             type="link"
+            style={{ color: "#3cda27" }}
             icon={<EyeOutlined />}
             onClick={() => handleVerDetalle(record)}
           />
@@ -553,8 +570,16 @@ const Pagos = () => {
         <Tooltip title="Ver Notas de Crédito">
           <Button
             type="link"
+            style={{ color: "#faad14" }}
             icon={<DollarOutlined />}
             onClick={() => handleVerNotasCredito(record)}
+          />
+        </Tooltip>
+        <Tooltip title="Ver Factura">
+          <Button
+            type="link"
+            icon={<FilePdfOutlined />}
+            onClick={() => handleVerFactura(record)}
           />
         </Tooltip>
       </Space>

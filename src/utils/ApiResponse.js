@@ -35,6 +35,7 @@ export const normalizeError = (error) => {
       message: "La solicitud fue cancelada.",
     });
   }
+  //Si ya viene con body standar retornarla
   const body = error?.response?.data?.body;
   if (body?.status_code) return body;
 
@@ -42,8 +43,15 @@ export const normalizeError = (error) => {
   if (error?.response) {
     //Validación de token expirado
     let httpStatusCode = error?.response?.status;
-    let msgToken = error?.response?.data?.msg;
-    let msgTokenConvert = msgToken.toLowerCase().replaceAll(" ", "_");
+    // let msgToken = error?.response?.data?.msg;
+    // let msgTokenConvert = msgToken.toLowerCase().replaceAll(" ", "_");
+
+    const msgToken = error?.response?.data?.msg;
+    const msgTokenConvert =
+      typeof msgToken === "string"
+        ? msgToken.toLowerCase().replaceAll(" ", "_")
+        : null;
+
     //Token expirado y 401:
     if (
       msgTokenConvert === STATUS_MESSAGES.TOKEN_EXPIRED &&
