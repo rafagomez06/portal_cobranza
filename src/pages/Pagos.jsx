@@ -718,7 +718,7 @@ const Pagos = () => {
 
           <Divider />
         </Form>
-        {/* DATATABLE DE LAS FACTURAS*/}
+        {/* DataTable de Facturas*/}
         {dataSource.length > 0 ? (
           <>
             <Flex
@@ -829,6 +829,9 @@ const Pagos = () => {
                 rowSelectorActivo ? rowSelection : rowSelectorActivo
               }
               actionColumn={actionColumn}
+              searchable
+              searchDataIndex="factura"
+              searchPlaceholder="Buscar por factura"
             />
 
             <ModalDetalle
