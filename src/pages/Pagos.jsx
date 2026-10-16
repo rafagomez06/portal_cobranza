@@ -26,6 +26,7 @@ import {
   FilePdfOutlined,
   SearchOutlined,
   ClearOutlined,
+  MailOutlined,
   DollarOutlined,
 } from "@ant-design/icons";
 import { RFC_VENTAS_GRALES } from "../constants/RfcGenericos";
@@ -176,7 +177,6 @@ const Pagos = () => {
     const rfcCliente = user.rfc_cliente;
     //Valida si es venta general o no
     const esVentaGeneral = RFC_VENTAS_GRALES.includes(rfcCliente) ? 1 : 0;
-
     setParametroCatalogo(esVentaGeneral ?? null);
   }, [user.rfc_cliente]);
 
@@ -550,6 +550,17 @@ const Pagos = () => {
     }
   };
 
+  //Enviar Cartera
+  const handleEnviarCartera = async () => {
+    try {
+      await fetchEnviarCartera({
+        rfc_cliente: user.rfc_cliente,
+      });
+    } catch (error) {
+      message.error(error?.message || "No se pudo enviar cartera");
+    }
+  };
+
   //Boton de acción
   const actionColumn = {
     title: "Detalle",
@@ -635,7 +646,7 @@ const Pagos = () => {
             </Col>
 
             {/* Comprobante */}
-            <Col flex="0 0 260px">
+            <Col flex="0 0 210px">
               <Form.Item
                 label="Comprobante de Pago"
                 name="archivo"
@@ -674,7 +685,8 @@ const Pagos = () => {
                   formatter={(v) =>
                     `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
-                  parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
+                  // parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
+                  parser={(v) => v.replace(/\$\s?|,/g, "")}
                 />
               </Form.Item>
             </Col>
@@ -685,7 +697,7 @@ const Pagos = () => {
                 justify="flex-end"
                 align="flex-end"
                 gap="small"
-                style={{ height: "100%" }}
+                style={{ height: "120%" }}
               >
                 <Button
                   color="green"
@@ -712,10 +724,18 @@ const Pagos = () => {
                 >
                   Limpiar
                 </Button>
+                <Button
+                  color="orange "
+                  variant="solid"
+                  onClick={handleEnviarCartera}
+                  disabled={loading}
+                  icon={<MailOutlined />}
+                >
+                  Enviar Cartera
+                </Button>
               </Flex>
             </Col>
           </Row>
-
           <Divider />
         </Form>
         {/* DataTable de Facturas*/}

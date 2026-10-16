@@ -26,7 +26,7 @@ export function useHistorialPagosFacturas(parametro, options = {}) {
     queryKey: QUERY_KEYS.historialPagosFacturas(parametro),
     queryFn: ({ signal }) => fetchHistorialPagosFacturas(parametro, { signal }),
     select: (response) => response.data,
-    staleTime: 1000 * 60 * 5, //5 min
+    staleTime: 1000 * 60 * 2, //2 min
     ...options,
     enabled: parametroValido && (options.enabled ?? true),
   });

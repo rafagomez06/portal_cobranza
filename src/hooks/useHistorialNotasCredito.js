@@ -26,7 +26,7 @@ export function useHistorialNotasCredito(parametro, options = {}) {
     queryKey: QUERY_KEYS.historialNotasCredito(parametro),
     queryFn: ({ signal }) => fetchHistorialNotasCredito(parametro, { signal }),
     select: (response) => response.data,
-    staleTime: 1000 * 60 * 5, //5 min
+    staleTime: 1000 * 60 * 2, //2 min
     ...options,
     enabled: parametroValido && (options.enabled ?? true),
   });
