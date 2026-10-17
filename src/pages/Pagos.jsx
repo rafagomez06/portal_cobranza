@@ -40,6 +40,7 @@ import { useListadoFacturas } from "../hooks/useListadoFacturas";
 import { useHistorialNotasCredito } from "../hooks/useHistorialNotasCredito";
 import { useHistorialPagosFacturas } from "../hooks/useHistorialPagosFacturas";
 import { useRegistrarPago } from "../hooks/useRegistrarPago";
+import { useEnviarCartera } from "../hooks/useEnviarCartera";
 import { fetchVerFacturaCliente } from "../services/verFacturaClienteService";
 
 //Context
@@ -93,6 +94,8 @@ const Pagos = () => {
   //################ Consumo Hooks  ################
   const { user, updateUser } = useAuth();
   const { RegistrarPago } = useRegistrarPago();
+  const { EnviarCartera } = useEnviarCartera();
+
   //Catalogo
   const {
     tiposFacturas,
@@ -335,6 +338,10 @@ const Pagos = () => {
     setValueSelect(0);
     setOrdenSeleccion([]);
     setEsSelectFactActivo(true);
+    setParametro(null);
+    setParametroCatalogo(null);
+    setParametroHistorial(null);
+    setParametroNotaCredito(null);
   };
 
   //LLena valores combo tipos factura
@@ -551,13 +558,46 @@ const Pagos = () => {
   };
 
   //Enviar Cartera
+  // const handleEnviarCartera = async () => {
+  //   try {
+  //     await EnviarCartera({
+  //       rfc_cliente: user.rfc_cliente,
+  //     });
+  //   } catch (error) {
+  //     message.error(error?.message || "No se pudo enviar cartera");
+  //   }
+  // };
+
   const handleEnviarCartera = async () => {
-    try {
-      await fetchEnviarCartera({
-        rfc_cliente: user.rfc_cliente,
+    setLoading(true);
+
+    const result = await EnviarCartera({
+      rfc_cliente: user.rfc_cliente,
+    });
+
+    setLoading(false);
+
+    if (result.success) {
+      message.open({
+        type: "success",
+        content: result.message,
+        duration: 8,
       });
-    } catch (error) {
-      message.error(error?.message || "No se pudo enviar cartera");
+      return;
+    }
+
+    switch (result.status_message) {
+      case "canceled":
+        return; // no mostramos nada
+      case "network_error":
+      case "timeout":
+        message.error(result.message);
+        break;
+      case "login_failed":
+        message.error(result.message);
+        break;
+      default:
+        message.error(result.message);
     }
   };
 
@@ -600,14 +640,11 @@ const Pagos = () => {
   return (
     <>
       {contextHolder}
-
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[{ title: "Pagos" }, { title: "Registro" }]}
       />
-
       <h2>Registrar Pagos</h2>
-
       <Card style={CardStyle} variant="borderless">
         <Form
           form={form}
@@ -689,51 +726,6 @@ const Pagos = () => {
                   parser={(v) => v.replace(/\$\s?|,/g, "")}
                 />
               </Form.Item>
-            </Col>
-
-            {/* Botones de acccion*/}
-            <Col flex="auto">
-              <Flex
-                justify="flex-end"
-                align="flex-end"
-                gap="small"
-                style={{ height: "120%" }}
-              >
-                <Button
-                  color="green"
-                  variant="solid"
-                  loading={isLoadingFacturas}
-                  onClick={handleBuscarFacturas}
-                  icon={<SearchOutlined />}
-                >
-                  Buscar Facturas
-                </Button>
-                <Button
-                  color="blue"
-                  variant="solid"
-                  htmlType="submit"
-                  loading={loading}
-                  icon={<SaveOutlined />}
-                >
-                  Guardar
-                </Button>
-                <Button
-                  onClick={handleReset}
-                  disabled={loading}
-                  icon={<ClearOutlined />}
-                >
-                  Limpiar
-                </Button>
-                <Button
-                  color="orange "
-                  variant="solid"
-                  onClick={handleEnviarCartera}
-                  disabled={loading}
-                  icon={<MailOutlined />}
-                >
-                  Enviar Cartera
-                </Button>
-              </Flex>
             </Col>
           </Row>
           <Divider />
@@ -844,7 +836,7 @@ const Pagos = () => {
               tBody={dataSource}
               loading={isLoadingFacturas}
               currencyColumns={columnasFormatoMoneda}
-              pagination={{ pageSize: 20, showSizeChanger: false }}
+              pagination={{ pageSize: 10, showSizeChanger: false }}
               rowSelection={
                 rowSelectorActivo ? rowSelection : rowSelectorActivo
               }
@@ -865,6 +857,55 @@ const Pagos = () => {
           <Empty description="No hay facturas para mostrar" />
         )}
       </Card>
+      <Divider />
+      {/* Botones de acción */}
+      <Col span={24}>
+        <Flex justify="space-between" align="center" style={{ width: "100%" }}>
+          {/* Botón de la izquierda */}
+          <Button
+            onClick={handleReset}
+            disabled={loading}
+            icon={<ClearOutlined />}
+          >
+            Limpiar
+          </Button>
+
+          {/* Grupo de botones de la derecha */}
+          <Flex gap="small" align="center">
+            <Button
+              color="blue"
+              variant="solid"
+              htmlType="submit"
+              loading={loading}
+              icon={<SaveOutlined />}
+              onClick={() => form.submit()}
+            >
+              Guardar
+            </Button>
+
+            <Button
+              color="orange"
+              variant="solid"
+              onClick={handleEnviarCartera}
+              disabled={loading}
+              icon={<MailOutlined />}
+            >
+              Enviar Cartera
+            </Button>
+
+            <Button
+              color="green"
+              variant="solid"
+              loading={isLoadingFacturas}
+              onClick={handleBuscarFacturas}
+              icon={<SearchOutlined />}
+            >
+              Buscar Facturas
+            </Button>
+          </Flex>
+        </Flex>
+      </Col>
+      <Divider />
     </>
   );
 };
