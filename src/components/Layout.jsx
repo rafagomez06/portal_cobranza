@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Layout, Menu, Button, Avatar, Space, Typography, Divider } from "antd";
 import {
   MenuFoldOutlined,
@@ -33,12 +33,20 @@ const AppLayout = () => {
   const location = useLocation();
   const selectedKey = RUTA_CLAVE[location.pathname] || "1";
   const { user } = useAuth();
+  const [year, setYear] = useState(0);
 
   const CerrarSesion = () => {
     // Elimina storage
     localStorage.clear();
     navigate("/login"); // Redirige a tu pantalla de login
   };
+
+  useEffect(() => {
+    //Se obtiene el año en curso
+    const fechaActual = new Date();
+    const year = fechaActual.getFullYear();
+    setYear(year);
+  });
 
   return (
     <Layout style={layoutStyle}>
@@ -170,7 +178,7 @@ const AppLayout = () => {
         </Content>
 
         <Footer style={footerStyle}>
-          ©2026 Primos & Cousins. Todos los derechos reservados.
+          ©{year} Primos & Cousins. Todos los derechos reservados.
         </Footer>
       </Layout>
     </Layout>

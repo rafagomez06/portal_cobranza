@@ -872,16 +872,6 @@ const Pagos = () => {
             </Button>
 
             <Button
-              color="orange"
-              variant="solid"
-              onClick={handleEnviarCartera}
-              disabled={loading}
-              icon={<MailOutlined />}
-            >
-              Enviar Cartera
-            </Button>
-
-            <Button
               color="green"
               variant="solid"
               loading={isLoadingFacturas}
@@ -889,6 +879,15 @@ const Pagos = () => {
               icon={<SearchOutlined />}
             >
               Buscar Facturas
+            </Button>
+            <Button
+              color="orange"
+              variant="solid"
+              onClick={handleEnviarCartera}
+              disabled={loading}
+              icon={<MailOutlined />}
+            >
+              Solicitar Cartera
             </Button>
           </Flex>
         </Flex>
