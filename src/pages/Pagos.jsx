@@ -339,7 +339,6 @@ const Pagos = () => {
     setOrdenSeleccion([]);
     setEsSelectFactActivo(true);
     setParametro(null);
-    setParametroCatalogo(null);
     setParametroHistorial(null);
     setParametroNotaCredito(null);
   };
@@ -556,18 +555,7 @@ const Pagos = () => {
       message.error(error?.message || "No se pudo abrir la factura");
     }
   };
-
-  //Enviar Cartera
-  // const handleEnviarCartera = async () => {
-  //   try {
-  //     await EnviarCartera({
-  //       rfc_cliente: user.rfc_cliente,
-  //     });
-  //   } catch (error) {
-  //     message.error(error?.message || "No se pudo enviar cartera");
-  //   }
-  // };
-
+  //Enviar la cartera
   const handleEnviarCartera = async () => {
     setLoading(true);
 
