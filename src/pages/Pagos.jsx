@@ -831,7 +831,7 @@ const Pagos = () => {
               actionColumn={actionColumn}
               searchable
               searchDataIndex="factura"
-              searchPlaceholder="Buscar por factura"
+              searchPlaceholder="Filtrar por factura"
             />
 
             <ModalDetalle
